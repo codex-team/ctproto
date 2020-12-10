@@ -1,0 +1,7 @@
+{
+  "extends": [
+    "codex",
+    "plugin:jest/recommended"
+  ],
+  "plugins": ["jest"]
+}
