@@ -11,7 +11,8 @@
     "test:server": "jest",
     "lint": "eslint ./src",
     "lint:test": "eslint ./src --ext .ts",
-    "lint:fix": "eslint ./src --fix"
+    "lint:fix": "eslint ./src --fix",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/jest": "^26.0.18",
