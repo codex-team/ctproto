@@ -3,7 +3,7 @@ import ws from 'ws';
 import { CriticalError } from './errors';
 import { CloseEventCode } from './closeEvent';
 import Client from './client';
-import { NewMessage, ResponseMessage } from './../../types';
+import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
