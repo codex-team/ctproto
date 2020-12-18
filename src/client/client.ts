@@ -1,5 +1,6 @@
 import MessageFactory from '../messageFactory';
-import {NewMessage, ResponseMessage} from '../../types';
+import { NewMessage, ResponseMessage } from '../../types';
+import WebSocket from 'ws';
 
 /**
  * Available options for the CTProtoClient
@@ -24,7 +25,7 @@ export interface CTProtoClientOptions<AuthRequestPayload, ApiResponse extends Re
    *
    * @param data - full message data
    */
-  onAuth: (data: ApiResponse) => Promise<void>;
+  onAuth: (data: ApiResponse) => Promise<void> | void;
 
   /**
    * Method for handling message inited by the API
@@ -32,7 +33,7 @@ export interface CTProtoClientOptions<AuthRequestPayload, ApiResponse extends Re
    *
    * @param message - full message data
    */
-  onMessage: (data: ApiResponse) => Promise<void>;
+  onMessage: (data: ApiResponse) => Promise<void> | void;
 
   /**
    * Allows to disable validation/authorization and other warning messages
@@ -58,7 +59,7 @@ export interface Request<ApiRequest, ApiResponse extends ResponseMessage<unknown
    *
    * @param data - response
    */
-  cb: (data: ApiResponse) => Promise<void>;
+  cb: (data: ApiResponse) => Promise<void> | void;
 }
 
 /**
@@ -94,14 +95,22 @@ export default class CTProtoClient<AuthRequestPayload, ApiRequest extends NewMes
     this.socket = new WebSocket(options.apiUrl);
 
     /**
-     * After open connection we send authorization message
+     * Open connection event
      */
-    this.socket.onopen = ev => {
+    this.socket.onopen = () => {
+      /**
+       * After open connection we send authorization message
+       */
       this.send('authorize', this.options.authRequestPayload, this.options.onAuth);
     };
 
-    this.socket.onmessage = ev => {
-      const message: ApiResponse = JSON.parse(ev.data);
+    /**
+     * Incoming message event
+     *
+     * @param event - message event
+     */
+    this.socket.onmessage = (event) => {
+      const message: ApiResponse = JSON.parse(event.data.toString());
       const messageId = message.messageId;
 
       /**
@@ -113,14 +122,28 @@ export default class CTProtoClient<AuthRequestPayload, ApiRequest extends NewMes
         return;
       }
 
-      const req: Request<ApiRequest, ApiResponse> | undefined = this.requests.find(req => req.request.messageId === messageId);
+      const request: Request<ApiRequest, ApiResponse> | undefined = this.requests.find(req => req.request.messageId === messageId);
 
       /**
        * If we found request we do cb function
        */
-      if (!!req){
-        req.cb(message);
+      if (request) {
+        request.cb(message);
       }
+    };
+
+    /**
+     * Connection closed event
+     */
+    this.socket.onclose = () => {
+      this.log('Connection closed');
+    };
+
+    /**
+     *  Error event
+     */
+    this.socket.onerror = () => {
+      this.log('Error');
     };
   }
 
@@ -132,7 +155,7 @@ export default class CTProtoClient<AuthRequestPayload, ApiRequest extends NewMes
    * @param payload - any payload
    * @param cb - cb which will be called when response comes
    */
-  public send(type: string, payload: AuthRequestPayload, cb: (data: ApiResponse) => Promise<void>): void {
+  public async send(type: string, payload: AuthRequestPayload, cb: (data: ApiResponse) => Promise<void> | void): Promise<void> {
     const message = MessageFactory.create(type, payload);
 
     this.requests.push({
@@ -140,7 +163,31 @@ export default class CTProtoClient<AuthRequestPayload, ApiRequest extends NewMes
       cb,
     });
 
+    await this.waitForOpenConnection();
+
     this.socket.send(message);
+  }
+
+  /**
+   * Wait for open WebSocket connections
+   */
+  private async waitForOpenConnection(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const maxNumberOfAttempts = 10;
+      const intervalTime = 900; // ms
+
+      let currentAttempt = 0;
+      const interval = setInterval(() => {
+        if (currentAttempt > maxNumberOfAttempts - 1) {
+          clearInterval(interval);
+          reject(new Error('Maximum number of attempts exceeded'));
+        } else if (this.socket.readyState === this.socket.OPEN) {
+          clearInterval(interval);
+          resolve();
+        }
+        currentAttempt++;
+      }, intervalTime);
+    });
   }
 
   /**
