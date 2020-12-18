@@ -1,6 +1,6 @@
 {
   "name": "ctproto",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CodeX Transport Protocol",
   "main": "index.js",
   "repository": "https://github.com/codex-team/ctproto.git",
