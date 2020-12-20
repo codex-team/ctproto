@@ -36,7 +36,7 @@ export interface CTProtoClientOptions<AuthRequestPayload, ApiResponse extends Re
   onMessage: (data: ApiResponse) => Promise<void> | void;
 
   /**
-   * Allows to disable validation/authorization and other warning messages
+   * Allows disabling logs
    */
   disableLogs?: boolean;
 }
