@@ -116,7 +116,7 @@ export default class CTProtoClient<AuthRequestPayload, ApiRequest extends NewMes
       /**
        * if messageId == null then this message inited by the API
        */
-      if (messageId == null) {
+      if (messageId === null) {
         this.options.onMessage(message);
 
         return;
