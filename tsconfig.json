@@ -5,6 +5,10 @@
     "rootDir": ".",
     "outDir": "./build",
     "esModuleInterop": true,
-    "strict": true
-  }
+    "strict": true,
+    "declaration": true,
+  },
+  "exclude": [
+    "./tests/**/*",
+  ]
 }
