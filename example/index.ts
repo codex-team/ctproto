@@ -30,8 +30,11 @@ const server = new CTProtoServer<AuthorizeMessagePayload, AuthData, ApiRequest, 
       message: 'bad token',
     }
   },
-  async onMessage(message:ApiRequest): Promise<void> {
-    console.log('Request:\n', message);
+  async onMessage(message:ApiRequest): Promise<Payload> {
+    console.log('CTProtoServer 💖 onMessage:', message);
+    return {
+      message: 'good job',
+    }
   }
 })
 
@@ -50,3 +53,10 @@ const client = new CTProtoClient<Payload, AuthorizeMessagePayload, ApiResponse>(
     console.log('CTProtoClient 💖 onMessage: ', data);
   }
 });
+
+/**
+ * Send message
+ */
+client.send('tmp', {}, (data => {
+  console.log('cb log: ', data);
+}));
