@@ -156,19 +156,23 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
    * @param payload - any payload
    * @param cb - cb which will be called when response comes
    */
-  public async send(type: string, payload: MessagePayload | AuthRequestPayload, cb?: (data: MessagePayload) => Promise<void> | void): Promise<void> {
+  public async send(type: string, payload: MessagePayload | AuthRequestPayload, cb?: (data: MessagePayload) => Promise<void> | void): Promise<MessagePayload> {
     const message = MessageFactory.create(type, payload);
-
-    this.requests.push({
-      messageId: JSON.parse(message).messageId,
-      cb,
-    });
 
     if (this.socket.readyState === this.socket.CONNECTING){
       await this.waitForOpenConnection();
     }
 
     this.socket.send(message);
+
+    return new Promise((resolve => {
+      this.requests.push({
+        messageId: JSON.parse(message).messageId,
+        cb(response) {
+          resolve(response);
+        },
+      });
+    }));
   }
 
   /**
