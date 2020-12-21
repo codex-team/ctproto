@@ -156,7 +156,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
    * @param payload - any payload
    * @param cb - cb which will be called when response comes
    */
-  public async send(type: string, payload: AuthRequestPayload, cb?: (data: MessagePayload) => Promise<void> | void): Promise<void> {
+  public async send(type: string, payload: MessagePayload | AuthRequestPayload, cb?: (data: MessagePayload) => Promise<void> | void): Promise<void> {
     const message = MessageFactory.create(type, payload);
 
     this.requests.push({
@@ -164,7 +164,9 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
       cb,
     });
 
-    await this.waitForOpenConnection();
+    if (this.socket.readyState === this.socket.CONNECTING){
+      await this.waitForOpenConnection();
+    }
 
     this.socket.send(message);
   }
@@ -173,20 +175,14 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
    * Wait for open WebSocket connections
    */
   private async waitForOpenConnection(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const maxNumberOfAttempts = 10;
-      const intervalTime = 900; // ms
+    return new Promise((resolve) => {
+      const intervalTime = 900;
 
-      let currentAttempt = 0;
       const interval = setInterval(() => {
-        if (currentAttempt > maxNumberOfAttempts - 1) {
-          clearInterval(interval);
-          reject(new Error('Maximum number of attempts exceeded'));
-        } else if (this.socket.readyState === this.socket.OPEN) {
+        if (this.socket.readyState === this.socket.OPEN) {
           clearInterval(interval);
           resolve();
         }
-        currentAttempt++;
       }, intervalTime);
     });
   }
