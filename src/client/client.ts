@@ -117,7 +117,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
       const messageId = message.messageId;
 
       /**
-       * if messageId == null then this message inited by the API
+       * if messageId === null then this message inited by the API
        */
       if (messageId === null) {
         this.options.onMessage(message.payload);
