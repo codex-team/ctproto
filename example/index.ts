@@ -3,7 +3,7 @@ import { CTProtoClient } from '../src/client';
 import { NewMessage, ResponseMessage } from '../types';
 
 type Payload = Record<string, string>
-interface ApiResponse extends NewMessage<Payload> {}
+interface ApiResponse extends ResponseMessage<Payload> {}
 interface ApiRequest extends NewMessage<Payload> {}
 interface ApiOutgoingMessage extends NewMessage<Payload>{}
 type AuthorizeMessagePayload  = {
@@ -38,15 +38,15 @@ const server = new CTProtoServer<AuthorizeMessagePayload, AuthData, ApiRequest, 
 /**
  * CTProtoClient example
  */
-const client = new CTProtoClient<Payload, NewMessage<Payload>, ApiResponse>({
+const client = new CTProtoClient<Payload, AuthorizeMessagePayload, ApiResponse>({
   apiUrl: 'ws://localhost:8080',
   authRequestPayload: {
     token: 'asd',
   },
-  onAuth: (data: ResponseMessage<Payload>) => {
+  onAuth: (data: Payload) => {
     console.log('CTProtoClient 💖 onAuth: ', data);
   },
-  onMessage: (data: ResponseMessage<Payload>) => {
+  onMessage: (data: Payload) => {
     console.log('CTProtoClient 💖 onMessage: ', data);
   }
 });
