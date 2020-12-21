@@ -5,8 +5,8 @@ import WebSocket from 'ws';
 /**
  * Available options for the CTProtoClient
  *
- *  @template MessagePayload - what kind of data passed with the message
- *  @template AuthRequestPayload - data used for authorization
+ * @template MessagePayload - what kind of data passed with the message
+ * @template AuthRequestPayload - data used for authorization
  */
 export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
   /**
