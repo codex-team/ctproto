@@ -43,6 +43,13 @@ export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
 }
 
 /**
+ * Callback, which will called when response comes
+ *
+ * @template MessagePayload - what kind of data passed with the message
+ */
+type Callback<MessagePayload> = (payload: MessagePayload) => void;
+
+/**
  * Storing requests
  * This is for catching responses to requests with messageId.
  *
@@ -59,7 +66,7 @@ export interface Request<MessagePayload> {
    *
    * @param data - message payload
    */
-  cb?: (payload: MessagePayload) => Promise<void> | void;
+  cb?: Callback<MessagePayload>;
 }
 
 /**
@@ -117,15 +124,6 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
       try {
         const message: ApiResponse = JSON.parse(event.data.toString());
         const messageId = message.messageId;
-
-        /**
-         * if messageId == null then this message inited by the API
-         */
-        if (messageId === null) {
-          this.options.onMessage(message.payload);
-
-          return;
-        }
 
         const request: Request<MessagePayload> | undefined = this.requests.find(req => req.messageId === messageId);
 
@@ -188,7 +186,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
     return new Promise(resolve => {
       this.requests.push({
         messageId: JSON.parse(message).messageId,
-        cb(response) {
+        cb: (response: MessagePayload) => {
           resolve(response);
         },
       });
