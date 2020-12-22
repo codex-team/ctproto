@@ -1,7 +1,6 @@
 import MessageFactory from '../messageFactory';
 import { ResponseMessage } from '../../types';
-import { MessageEvent, CloseEvent, ErrorEvent } from 'ws';
-import WebSocket from 'ws';
+import WebSocket, { MessageEvent, CloseEvent, ErrorEvent } from 'ws';
 
 /**
  * Available options for the CTProtoClient
@@ -140,21 +139,24 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
         if (request && typeof request.cb == 'function') {
           request.cb(message.payload);
         }
-      }
-      catch (error) {
+      } catch (error) {
         this.log(`${error.message}`, event.data);
       }
     };
 
     /**
      * Connection closed event
+     *
+     * @param event - close event
      */
     this.socket.onclose = (event: CloseEvent) => {
       this.log('Connection closed: ', event.code);
     };
 
     /**
-     *  Error event
+     * Error event
+     *
+     * @param event - error event
      */
     this.socket.onerror = (event: ErrorEvent) => {
       this.log('Error: ', event.message);
