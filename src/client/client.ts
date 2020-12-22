@@ -6,8 +6,8 @@ import WebSocket from 'ws';
 /**
  * Available options for the CTProtoClient
  *
- *  @template MessagePayload - what kind of data passed with the message
- *  @template AuthRequestPayload - data used for authorization
+ * @template MessagePayload - what kind of data passed with the message
+ * @template AuthRequestPayload - data used for authorization
  */
 export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
   /**
@@ -128,6 +128,13 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
         }
 
         const request: Request<MessagePayload> | undefined = this.requests.find(req => req.messageId === messageId);
+
+        /**
+         * if messageId === null then this message inited by the API
+         */
+        if (messageId === null) {
+          this.options.onMessage(message.payload);
+        }
 
         /**
          * If we found request and we have cb we do cb function
