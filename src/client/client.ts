@@ -46,7 +46,7 @@ export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
  *
  * @template MessagePayload - what kind of data passed with the message
  */
-type Callback<MessagePayload> = (payload: MessagePayload) => void;
+type RequestCallback<MessagePayload> = (payload: MessagePayload) => void;
 
 /**
  * Storing requests
@@ -65,7 +65,7 @@ export interface Request<MessagePayload> {
    *
    * @param data - message payload
    */
-  cb?: Callback<MessagePayload>;
+  cb?: RequestCallback<MessagePayload>;
 }
 
 /**
@@ -173,10 +173,16 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
   public async send(type: string, payload: MessagePayload | AuthRequestPayload): Promise<MessagePayload> {
     const message = MessageFactory.create(type, payload);
 
+    /**
+     * If readyState === CONNECTING then we wait for open connection
+     */
     if (this.socket.readyState === this.socket.CONNECTING) {
       await this.waitForOpenConnection();
     }
 
+    /**
+     * If readyState === CLOSED then we throw error
+     */
     if (this.socket.readyState === this.socket.CLOSED) {
       const prefix = 'CTProto 💖';
 
