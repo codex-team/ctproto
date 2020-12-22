@@ -1,5 +1,6 @@
 import MessageFactory from '../messageFactory';
 import { ResponseMessage } from '../../types';
+import { MessageEvent, CloseEvent, ErrorEvent } from 'ws';
 import WebSocket from 'ws';
 
 /**
@@ -112,41 +113,46 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
      *
      * @param event - message event
      */
-    this.socket.onmessage = (event) => {
-      const message: ApiResponse = JSON.parse(event.data.toString());
-      const messageId = message.messageId;
+    this.socket.onmessage = (event: MessageEvent) => {
+      try {
+        const message: ApiResponse = JSON.parse(event.data.toString());
+        const messageId = message.messageId;
 
-      /**
-       * if messageId == null then this message inited by the API
-       */
-      if (messageId === null) {
-        this.options.onMessage(message.payload);
+        /**
+         * if messageId == null then this message inited by the API
+         */
+        if (messageId === null) {
+          this.options.onMessage(message.payload);
 
-        return;
+          return;
+        }
+
+        const request: Request<MessagePayload> | undefined = this.requests.find(req => req.messageId === messageId);
+
+        /**
+         * If we found request and we have cb we do cb function
+         */
+        if (request && typeof request.cb == 'function') {
+          request.cb(message.payload);
+        }
       }
-
-      const request: Request<MessagePayload> | undefined = this.requests.find(req => req.messageId === messageId);
-
-      /**
-       * If we found request and we have cb we do cb function
-       */
-      if (request && typeof request.cb == 'function') {
-        request.cb(message.payload);
+      catch (error) {
+        this.log(`${error.message}`, event.data);
       }
     };
 
     /**
      * Connection closed event
      */
-    this.socket.onclose = () => {
-      this.log('Connection closed');
+    this.socket.onclose = (event: CloseEvent) => {
+      this.log('Connection closed: ', event.code);
     };
 
     /**
      *  Error event
      */
-    this.socket.onerror = () => {
-      this.log('Error');
+    this.socket.onerror = (event: ErrorEvent) => {
+      this.log('Error: ', event.message);
     };
   }
 
@@ -162,6 +168,12 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
 
     if (this.socket.readyState === this.socket.CONNECTING) {
       await this.waitForOpenConnection();
+    }
+
+    if (this.socket.readyState === this.socket.CLOSED) {
+      const prefix = 'CTProto 💖';
+
+      throw new Error(`${prefix} Connection closed`);
     }
 
     this.socket.send(message);
