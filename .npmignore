@@ -1,0 +1,7 @@
+.idea/
+node_modules
+tests/
+.git
+.github
+package-lock.json
+yarn.lock

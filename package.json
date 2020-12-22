@@ -1,8 +1,9 @@
 {
   "name": "ctproto",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "CodeX Transport Protocol",
-  "main": "index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "repository": "https://github.com/codex-team/ctproto.git",
   "author": "CodeX <team@codex.so>",
   "license": "MIT",
@@ -11,7 +12,8 @@
     "test:server": "jest",
     "lint": "eslint ./src",
     "lint:test": "eslint ./src --ext .ts",
-    "lint:fix": "eslint ./src --fix"
+    "lint:fix": "eslint ./src --fix",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/jest": "^26.0.18",
