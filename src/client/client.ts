@@ -32,9 +32,9 @@ export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, A
    * Method for handling message inited by the API
    * Will be called when API sends message  (<-- not a response)
    *
-   * @param payload - response payload
+   * @param payload - response
    */
-  onMessage: (payload: ApiResponse['payload']) => void;
+  onMessage: (payload: ApiResponse) => void;
 
   /**
    * Allows disabling logs
@@ -132,7 +132,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
          * if messageId === null then this message inited by the API
          */
         if (messageId === null) {
-          this.options.onMessage(message.payload);
+          this.options.onMessage(message);
         }
 
         /**

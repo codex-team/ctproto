@@ -18,8 +18,8 @@ export const Client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeRespon
 
     console.log('CTProtoClient 💖: Authorization is success', data.success);
   },
-  onMessage: (data: ApiResponse['payload']) => {
-    console.log('CTProtoClient 💖: onMessage', data);
+  onMessage: (data: ApiResponse) => {
+    console.log('CTProtoClient 💖: onMessage', data.payload);
   }
 });
 
