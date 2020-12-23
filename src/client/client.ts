@@ -127,9 +127,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         const message: Message<unknown> = JSON.parse(event.data.toString());
         const messageId = message.messageId;
 
-        const updateMessage = message as ApiUpdate;
-
-        if (updateMessage.type) {
+        if ('type' in message) {
           this.options.onMessage(message as ApiUpdate);
         }
 
