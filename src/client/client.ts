@@ -5,9 +5,9 @@ import WebSocket, { MessageEvent, CloseEvent, ErrorEvent } from 'ws';
 /**
  * Available options for the CTProtoClient
  *
- * @template AuthRequestPayload - data used for authorization
- * @template AuthResponsePayload - authorization response payload
- * @template Api
+ * @template AuthRequestPayload - data used for authorization (for example: JWT token)
+ * @template AuthResponsePayload - data got after authorization
+ * @template ApiResponse - the type described all available API response messages
  */
 export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, ApiResponse extends ResponseMessage<unknown>> {
   /**
@@ -16,7 +16,7 @@ export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, A
   apiUrl: string;
 
   /**
-   * data used for authorization (for example: JWT token)
+   * Authorization request payload
    */
   authRequestPayload: AuthRequestPayload;
 
@@ -24,7 +24,7 @@ export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, A
    * Method for handling authorization response
    * Will be called when authorization response comes
    *
-   * @param data - message payload
+   * @param payload - authorization response payload
    */
   onAuth: (payload: AuthResponsePayload) => void;
 
@@ -32,7 +32,7 @@ export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, A
    * Method for handling message inited by the API
    * Will be called when API sends message  (<-- not a response)
    *
-   * @param data - message payload
+   * @param payload - response payload
    */
   onMessage: (payload: ApiResponse['payload']) => void;
 
@@ -74,9 +74,10 @@ export interface Request<MessagePayload> {
  *
  * Class Transport
  *
- * @template MessagePayload - what kind of data passed with the message
  * @template AuthRequestPayload - data used for authorization
- * @template ApiResponse - the type describing all available API response messages
+ * @template AuthResponsePayload - data got after authorization
+ * @template ApiRequest - the type described all available API request messages
+ * @template ApiResponse - the type described all available API response messages
  */
 export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>> {
   /**
@@ -168,8 +169,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * This method sends requests
    * When response comes callback function will be called
    *
-   * @param type - type of requests
-   * @param payload - any payload
+   * @param type - available type of requests
+   * @param payload - available request payload
    */
   public async send(type: ApiRequest['type'], payload: ApiRequest['payload']): Promise<ApiResponse['payload'] | AuthResponsePayload> {
     const message = MessageFactory.create(type, payload);
