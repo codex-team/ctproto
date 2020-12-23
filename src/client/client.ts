@@ -1,14 +1,15 @@
 import MessageFactory from '../messageFactory';
-import { ResponseMessage } from '../../types';
+import { NewMessage, ResponseMessage } from '../../types';
 import WebSocket, { MessageEvent, CloseEvent, ErrorEvent } from 'ws';
 
 /**
  * Available options for the CTProtoClient
  *
- * @template MessagePayload - what kind of data passed with the message
  * @template AuthRequestPayload - data used for authorization
+ * @template AuthResponsePayload - authorization response payload
+ * @template Api
  */
-export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
+export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, ApiResponse extends ResponseMessage<unknown>> {
   /**
    * Requests will be made to this API
    */
@@ -25,7 +26,7 @@ export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
    *
    * @param data - message payload
    */
-  onAuth: (payload: MessagePayload) => Promise<void> | void;
+  onAuth: (payload: AuthResponsePayload) => void;
 
   /**
    * Method for handling message inited by the API
@@ -33,7 +34,7 @@ export interface CTProtoClientOptions<MessagePayload, AuthRequestPayload> {
    *
    * @param data - message payload
    */
-  onMessage: (payload: MessagePayload) => Promise<void> | void;
+  onMessage: (payload: ApiResponse['payload']) => void;
 
   /**
    * Allows disabling logs
@@ -77,7 +78,7 @@ export interface Request<MessagePayload> {
  * @template AuthRequestPayload - data used for authorization
  * @template ApiResponse - the type describing all available API response messages
  */
-export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiResponse extends ResponseMessage<MessagePayload>> {
+export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>> {
   /**
    * Instance of WebSocket
    */
@@ -86,19 +87,19 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
   /**
    * Configuration options passed on Transport initialization
    */
-  private readonly options: CTProtoClientOptions<MessagePayload, AuthRequestPayload>;
+  private readonly options: CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, ApiResponse>;
 
   /**
    * Actual requests
    */
-  private requests: Array<Request<MessagePayload>> = new Array<Request<MessagePayload>>();
+  private requests: Array<Request<ApiResponse['payload']>> = new Array<Request<ApiResponse['payload']>>();
 
   /**
    * Constructor
    *
    * @param options - Transport options
    */
-  constructor(options: CTProtoClientOptions<MessagePayload, AuthRequestPayload>) {
+  constructor(options: CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, ApiResponse>) {
     this.options = options;
     this.socket = new WebSocket(options.apiUrl);
 
@@ -110,7 +111,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
        * After open connection we send authorization message
        */
       this.send('authorize', this.options.authRequestPayload).then((responsePayload) => {
-        this.options.onAuth(responsePayload);
+        this.options.onAuth(responsePayload as AuthResponsePayload);
       });
     };
 
@@ -124,7 +125,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
         const message: ApiResponse = JSON.parse(event.data.toString());
         const messageId = message.messageId;
 
-        const request: Request<MessagePayload> | undefined = this.requests.find(req => req.messageId === messageId);
+        const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
 
         /**
          * if messageId === null then this message inited by the API
@@ -134,7 +135,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
         }
 
         /**
-         * If we found request and we have cb we do cb function
+         * If we found requests and we have cb we do cb function
          */
         if (request && typeof request.cb == 'function') {
           request.cb(message.payload);
@@ -164,13 +165,13 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
   }
 
   /**
-   * This method sends request
+   * This method sends requests
    * When response comes callback function will be called
    *
-   * @param type - type of request
+   * @param type - type of requests
    * @param payload - any payload
    */
-  public async send(type: string, payload: MessagePayload | AuthRequestPayload): Promise<MessagePayload> {
+  public async send(type: ApiRequest['type'], payload: ApiRequest['payload']): Promise<ApiResponse['payload'] | AuthResponsePayload> {
     const message = MessageFactory.create(type, payload);
 
     /**
@@ -194,7 +195,7 @@ export default class CTProtoClient<MessagePayload, AuthRequestPayload, ApiRespon
     return new Promise(resolve => {
       this.requests.push({
         messageId: JSON.parse(message).messageId,
-        cb: (response: MessagePayload) => {
+        cb: (response: ApiResponse['payload']) => {
           resolve(response);
         },
       });
