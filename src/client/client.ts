@@ -32,9 +32,9 @@ export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, A
    * Method for handling message inited by the API
    * Will be called when API sends message  (<-- not a response)
    *
-   * @param payload - response
+   * @param data - message inited by the API
    */
-  onMessage: (payload: ApiUpdate) => void;
+  onMessage: (data: ApiUpdate) => void;
 
   /**
    * Allows disabling logs
