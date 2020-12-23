@@ -138,6 +138,77 @@ This callback will be fired when the new message accepted from the client. It wi
 
 You can handle a message and optionally you can return a value (`object`) to respond on this message. 
 
+## Client
+
+To use CTProto JavaScript client implementation, follow next guide.
+
+```ts
+import CTProtoClient from './client';
+
+const client = new CTProtoClient({
+    apiUrl: 'ws://localhost:8080',
+    authRequestPayload: {
+        token: 'asd',
+    },
+    onAuth: (data) => {
+        if (!data.success) {
+            throw new Error(`${data.error}`);
+        }
+
+        console.log('Authorization is success', data.success);
+    },
+    onMessage: (data) => {
+        console.log('Incomming message: ', data);
+    }
+});
+```
+
+Where
+
+| option | type | description |
+| -- | -- | -- |
+| `apiUrl` | _string_ | Requests will be made to this API. |
+| `authRequestPayload` | _AuthRequestPayload_ | Authorization request payload. |
+| `onAuth` | _(payload: AuthResponsePayload) => void_ | Method for handling authorization response. See details below |
+| `onMessage` | _(message: ApiUpdate) => void_ | Method for handling message inited by the server. See details below |
+
+###onAuth
+
+This callback will contain your application authorization response handler. It will accept the payload of the authorize response.
+
+You can implement your own authorization response handler in there.
+
+###onMessage
+
+This callback will be fired when the new message (inited by the server) accepted from the server. It will get a message object as a param.
+
+###Send request
+
+You can send request and get response:
+
+```ts
+Client.send(type, payload).then((responsePayload) => {
+    // do something with resopnse payload
+});
+```
+Where
+
+| parameter | type | description |
+| -- | -- | -- |
+| `type` | _ApiRequest['type']_ | Type of available request. |
+| `payload` | _ApiRequest['payload']_ | Request payload. |
+| `responsePayload` | _ApiResponse['payload']_ | Response payload. |
+
+Example
+
+```ts
+Client.send('sum-of-numbers', {
+    a: 10,
+    b: 11,
+}).then((responsePayload) => {
+    console.log('Response: ',responsePayload);
+});
+```
 
 ## About team
 
