@@ -1,12 +1,12 @@
 import { CTProtoClient } from '../src/client';
-import { ApiRequest, ApiResponse } from './types';
+import { ApiRequest, ApiResponse, ApiOutgoingMessage } from './types';
 import { AuthorizeMessagePayload } from './types/requests/authorize';
 import { AuthorizeResponsePayload } from './types/responses/authorize';
 
 /**
  * CTProtoClient example
  */
-export const Client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse>({
+export const Client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiOutgoingMessage>({
   apiUrl: 'ws://localhost:8080',
   authRequestPayload: {
     token: 'asd',
@@ -18,7 +18,7 @@ export const Client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeRespon
 
     console.log('CTProtoClient 💖: Authorization is success', data.success);
   },
-  onMessage: (data: ApiResponse) => {
+  onMessage: (data: ApiOutgoingMessage) => {
     console.log('CTProtoClient 💖: onMessage', data.payload);
   }
 });
