@@ -7,6 +7,7 @@
   "repository": "https://github.com/codex-team/ctproto.git",
   "author": "CodeX <team@codex.so>",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "test": "yarn test:server",
     "test:server": "jest",
