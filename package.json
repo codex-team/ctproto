@@ -13,6 +13,7 @@
     "lint": "eslint ./src",
     "lint:test": "eslint ./src --ext .ts",
     "lint:fix": "eslint ./src --fix",
+    "run:example": "ts-node example/index.ts",
     "build": "tsc"
   },
   "devDependencies": {
@@ -27,6 +28,7 @@
   "dependencies": {
     "eslint-config-codex": "^1.5.2",
     "nanoid": "^3.1.20",
+    "ts-node": "^9.1.1",
     "ws": "^7.4.1"
   }
 }

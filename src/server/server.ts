@@ -3,7 +3,7 @@ import ws from 'ws';
 import { CriticalError } from './errors';
 import { CloseEventCode } from './closeEvent';
 import Client from './client';
-import { NewMessage, ResponseMessage } from './../../types';
+import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
@@ -61,14 +61,14 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
  * @template AuthData - data got after authorization
  * @template ApiRequest - the type describing all available API request messages
  * @template ApiResponse - the type describing all available API response messages
- * @template ApiOutgoingMessage - all available outgoing messages
+ * @template ApiUpdate - all available outgoing messages
  */
-export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiOutgoingMessage extends NewMessage<unknown>> {
+export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>> {
   /**
    * Manager of currently connected clients
    * Allows to find, send and other manipulations.
    */
-  public clients = new ClientsList<AuthData, ApiResponse, ApiOutgoingMessage>();
+  public clients = new ClientsList<AuthData, ApiResponse, ApiUpdate>();
 
   /**
    * Instance of transport-layer framework
@@ -205,7 +205,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param client - connected client
    * @param message - accepted message
    */
-  private async handleAuthorizedMessage(client: Client<AuthData, ApiResponse, ApiOutgoingMessage>, message: ApiRequest): Promise<void> {
+  private async handleAuthorizedMessage(client: Client<AuthData, ApiResponse, ApiUpdate>, message: ApiRequest): Promise<void> {
     if (message.type == 'authorize') {
       return;
     }
