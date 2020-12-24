@@ -303,9 +303,13 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * Send all the enqueued messaged
    */
   private sendEnqueuedMessages(): void {
-    this.enqueuedMessages.forEach(({ type, payload, callback }) => {
-      this.send(type, payload, callback);
-    });
+    while (this.enqueuedMessages.length > 0) {
+      const messageToSend = this.enqueuedMessages.shift();
+
+      if (messageToSend) {
+        this.send(messageToSend['type'], messageToSend['payload'], messageToSend['callback']);
+      }
+    }
   }
 
   /**
