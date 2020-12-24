@@ -2,16 +2,13 @@ import { ResponseMessage } from '../../../types';
 
 /**
  * Authorize response payload
+ * For example, can contain authorized user data
  */
 export interface AuthorizeResponsePayload {
   /**
-   * If authorization is success then this field will be true else will be false
+   * For example, can contain authorized user data
    */
-  success: boolean;
-  /**
-   * Error message
-   */
-  error?: string;
+  userId: string;
 }
 
 /**

@@ -29,10 +29,10 @@ export interface CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, A
   onAuth: (payload: AuthResponsePayload) => void;
 
   /**
-   * Method for handling message inited by the API
+   * Method for handling message initialized by the API
    * Will be called when API sends message  (<-- not a response)
    *
-   * @param data - message inited by the API
+   * @param data - message initialized by the API
    */
   onMessage: (data: ApiUpdate) => void;
 
@@ -55,7 +55,7 @@ type RequestCallback<MessagePayload> = (payload: MessagePayload) => void;
  *
  * @template MessagePayload - what kind of data passed with the message
  */
-export interface Request<MessagePayload> {
+interface Request<MessagePayload> {
   /**
    * Request message id
    */
@@ -70,6 +70,26 @@ export interface Request<MessagePayload> {
 }
 
 /**
+ * Message that is waiting for sending
+ */
+interface EnqueuedMessage<ApiRequest extends NewMessage<unknown>> {
+  /**
+   * What kind of message
+   */
+  type: ApiRequest['type'],
+
+  /**
+   * Data to send
+   */
+  payload: ApiRequest['payload'],
+
+  /**
+   * Callback with the promise resolving method
+   */
+  callback: RequestCallback<ApiRequest['payload']>
+}
+
+/**
  * (￣^￣)ゞ
  *
  * Class Transport
@@ -78,13 +98,13 @@ export interface Request<MessagePayload> {
  * @template AuthResponsePayload - data got after authorization
  * @template ApiRequest - the type described all available API request messages
  * @template ApiResponse - the type described all available API response messages
- * @template ApiUpdate - the type described all available message inited by the API
+ * @template ApiUpdate - the type described all available message initialized by the API
  */
 export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>> {
   /**
    * Instance of WebSocket
    */
-  private readonly socket: WebSocket;
+  private socket?: WebSocket;
 
   /**
    * Configuration options passed on Transport initialization
@@ -97,70 +117,36 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private requests: Array<Request<ApiResponse['payload']>> = new Array<Request<ApiResponse['payload']>>();
 
   /**
+   * Messages that are waiting for sending
+   * (for example, when the 'send' called before the connection is established)
+   */
+  private enqueuedMessages: Array<EnqueuedMessage<ApiRequest>> = [];
+
+  /**
+   * Reconnection tries Timeout
+   */
+  private reconnectionTimer: unknown;
+
+  /**
+   * Time between reconnection attempts
+   */
+  private readonly reconnectionTimeout = 5000;
+
+  /**
+   * How many time we should attempt reconnection
+   */
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  private reconnectionAttempts = 5;
+
+  /**
    * Constructor
    *
    * @param options - Transport options
    */
   constructor(options: CTProtoClientOptions<AuthRequestPayload, AuthResponsePayload, ApiUpdate>) {
     this.options = options;
-    this.socket = new WebSocket(options.apiUrl);
 
-    /**
-     * Open connection event
-     */
-    this.socket.onopen = () => {
-      /**
-       * After open connection we send authorization message
-       */
-      this.send('authorize', this.options.authRequestPayload).then((responsePayload) => {
-        this.options.onAuth(responsePayload as AuthResponsePayload);
-      });
-    };
-
-    /**
-     * Incoming message event
-     *
-     * @param event - message event
-     */
-    this.socket.onmessage = (event: MessageEvent) => {
-      try {
-        const message: Message<unknown> = JSON.parse(event.data.toString());
-        const messageId = message.messageId;
-
-        if ('type' in message) {
-          this.options.onMessage(message as ApiUpdate);
-        }
-
-        const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
-
-        /**
-         * If we found requests and we have cb we do cb function
-         */
-        if (request && typeof request.cb == 'function') {
-          request.cb(message.payload);
-        }
-      } catch (error) {
-        this.log(`${error.message}`, event.data);
-      }
-    };
-
-    /**
-     * Connection closed event
-     *
-     * @param event - close event
-     */
-    this.socket.onclose = (event: CloseEvent) => {
-      this.log('Connection closed: ', event.code);
-    };
-
-    /**
-     * Error event
-     *
-     * @param event - error event
-     */
-    this.socket.onerror = (event: ErrorEvent) => {
-      this.log('Error: ', event.message);
-    };
+    this.init();
   }
 
   /**
@@ -169,52 +155,193 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    *
    * @param type - available type of requests
    * @param payload - available request payload
+   * @param [callback] - already created callback in case of sending the enqueued message
    */
-  public async send(type: ApiRequest['type'], payload: ApiRequest['payload']): Promise<ApiResponse['payload'] | AuthResponsePayload> {
-    const message = MessageFactory.create(type, payload);
-
-    /**
-     * If readyState === CONNECTING then we wait for open connection
-     */
-    if (this.socket.readyState === this.socket.CONNECTING) {
-      await this.waitForOpenConnection();
-    }
-
-    /**
-     * If readyState === CLOSED then we throw error
-     */
-    if (this.socket.readyState === this.socket.CLOSED) {
-      const prefix = 'CTProto 💖';
-
-      throw new Error(`${prefix} Connection closed`);
-    }
-
-    this.socket.send(message);
-
+  public async send(
+    type: ApiRequest['type'],
+    payload: ApiRequest['payload'],
+    callback?: RequestCallback<ApiRequest['payload']>
+  ): Promise<ApiResponse['payload'] | AuthResponsePayload> {
     return new Promise(resolve => {
+      /**
+       * If we are sending a message form the queue, there will be previously created callback
+       * Otherwise, create the new callback
+       */
+      if (!callback) {
+        callback = (response: ApiResponse['payload']) => {
+          resolve(response);
+        };
+      }
+
+      const message = MessageFactory.create(type, payload);
+
+      /**
+       * Handle sending when connection is not opened
+       */
+      if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+        this.log(`Cannot send a message «${type}» for now because the connection is not opened. Enqueueing...`);
+        this.enqueuedMessages.push({
+          type,
+          payload,
+          callback,
+        });
+
+        /**
+         * Do not initialize reconnection if there is CONNECTING or CLOSING state
+         */
+        if (this.socket && this.socket.readyState == this.socket.CLOSED) {
+          this.reconnect();
+        }
+
+        return;
+      }
+
+      this.socket.send(message);
       this.requests.push({
         messageId: JSON.parse(message).messageId,
-        cb: (response: ApiResponse['payload']) => {
-          resolve(response);
-        },
+        cb: callback,
       });
     });
   }
 
   /**
-   * Wait for open WebSocket connections
+   * Create socket instance and open the connections
    */
-  private async waitForOpenConnection(): Promise<void> {
-    return new Promise((resolve) => {
-      const intervalTime = 900;
+  private init(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.socket = new WebSocket(this.options.apiUrl);
 
-      const interval = setInterval(() => {
-        if (this.socket.readyState === this.socket.OPEN) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, intervalTime);
+      /**
+       * Incoming messages handler
+       *
+       * @param event - message event
+       */
+      this.socket.onmessage = (event: MessageEvent): void => {
+        this.onMessage(event);
+      };
+
+      /**
+       * Connection closing handler
+       *
+       * @param event - websocket event on closing
+       */
+      this.socket.onclose = (event: CloseEvent): void => {
+        const { code, reason } = event;
+
+        this.log('Connection closed: ', {
+          code,
+          reason,
+        });
+      };
+
+      /**
+       * Error handler
+       *
+       * @param event - error event
+       */
+      this.socket.onerror = (event: ErrorEvent): void => {
+        this.log('Socket error: ', event.message);
+
+        reject(event);
+      };
+
+      /**
+       * Socket opening handler
+       */
+      this.socket.onopen = (): void => {
+        /**
+         * After open connection we send authorization message
+         */
+        this.send('authorize', this.options.authRequestPayload)
+          .then((responsePayload) => {
+            this.log('the connection is ready for work');
+
+            this.options.onAuth(responsePayload as AuthResponsePayload);
+
+            if (this.enqueuedMessages.length > 0) {
+              const len = this.enqueuedMessages.length;
+
+              this.log(`There ${len === 1 ? 'is a message' : 'are ' + len + ' messages'} in queue:`, this.enqueuedMessages.map(m => m.type));
+
+              this.sendEnqueuedMessages();
+            }
+
+            resolve();
+          });
+      };
     });
+  }
+
+  /**
+   * Incoming messages handler
+   *
+   * @param event - socket message event
+   */
+  private onMessage(event: MessageEvent): void {
+    try {
+      const message: Message<unknown> = JSON.parse(event.data.toString());
+      const messageId = message.messageId;
+
+      if ('type' in message) {
+        this.options.onMessage(message);
+      }
+
+      const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
+
+      /**
+       * If we found requests and we have cb we do cb function
+       */
+      if (request && typeof request.cb == 'function') {
+        request.cb(message.payload);
+      }
+    } catch (error) {
+      this.log(`${error.message}`, event.data);
+    }
+  }
+
+  /**
+   * Send all the enqueued messaged
+   */
+  private sendEnqueuedMessages(): void {
+    this.enqueuedMessages.forEach(({ type, payload, callback }) => {
+      this.send(type, payload, callback);
+    });
+  }
+
+  /**
+   * Tries to reconnect to the server for specified number of times with the interval
+   *
+   * @param {boolean} [isForcedCall] - call function despite on timer
+   * @returns {Promise<void>}
+   */
+  private async reconnect(isForcedCall = false): Promise<void> {
+    if (this.reconnectionTimer && !isForcedCall) {
+      return;
+    }
+
+    this.reconnectionTimer = null;
+
+    try {
+      this.log('reconnecting...');
+
+      await this.init();
+
+      this.log('successfully reconnected.');
+    } catch (error) {
+      /**
+       * In case of connection error (something goes wrong on server)
+       * wait for 5 sec and try again
+       */
+      this.reconnectionAttempts--;
+
+      if (this.reconnectionAttempts === 0) {
+        return;
+      }
+
+      this.reconnectionTimer = setTimeout(() => {
+        this.reconnect(true);
+      }, this.reconnectionTimeout);
+    }
   }
 
   /**

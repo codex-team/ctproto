@@ -1,11 +1,13 @@
-import { Client } from './client';
+import { client } from './client';
 import { createServer } from './server';
 
-const Server = createServer();
+createServer();
 
-Client.send('sum-of-numbers', {
-  a: 10,
-  b: 11,
-}).then((responsePayload) => {
-  console.log('Response: ',responsePayload);
-});
+client
+  .send('sum-of-numbers', {
+    a: 10,
+    b: 11,
+  })
+  .then((responsePayload) => {
+    console.log('Response for "sum-of-numbers": ', responsePayload);
+  });

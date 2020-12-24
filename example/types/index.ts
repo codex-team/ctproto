@@ -7,19 +7,19 @@ import SendWord from './outgoing/sendWord';
 /**
  * The type described all available outgoing messages that can be sent by API
  */
-export type ApiOutgoingMessage =
-  | SendWord
+export type ApiUpdate =
+  | SendWord;
 
 /**
  * The type described all available API request messages
  */
 export type ApiRequest =
   | Authorize
-  | SumOfNumbers
+  | SumOfNumbers;
 
 /**
  * The type described all available API response messages
  */
 export type ApiResponse =
   | AuthorizeResponse
-  | SumOfNumbersResponse
+  | SumOfNumbersResponse;

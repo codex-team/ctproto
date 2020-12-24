@@ -1,25 +1,19 @@
 import { CTProtoClient } from '../src/client';
-import { ApiRequest, ApiResponse, ApiOutgoingMessage } from './types';
+import { authorizeRequestPayloadMock } from './mocks/authorizeRequestPayload';
+import { ApiRequest, ApiResponse, ApiUpdate } from './types';
 import { AuthorizeMessagePayload } from './types/requests/authorize';
 import { AuthorizeResponsePayload } from './types/responses/authorize';
 
 /**
  * CTProtoClient example
  */
-export const Client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiOutgoingMessage>({
+export const client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate>({
   apiUrl: 'ws://localhost:8080',
-  authRequestPayload: {
-    token: 'asd',
-  },
+  authRequestPayload: authorizeRequestPayloadMock,
   onAuth: (data: AuthorizeResponsePayload) => {
-    if (!data.success) {
-      throw new Error(`${data.error}`);
-    }
-
-    console.log('CTProtoClient 💖: Authorization is success', data.success);
+    console.log('CTProtoClient (example): Authorization succeeded', data);
   },
-  onMessage: (data: ApiOutgoingMessage) => {
-    console.log('CTProtoClient 💖: onMessage', data.payload);
-  }
+  onMessage: (data: ApiUpdate) => {
+    console.log('CTProtoClient (example): got the update', data);
+  },
 });
-

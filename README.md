@@ -78,7 +78,7 @@ All errors will be sent to the client with structure like that:
 
 ## Server
 
-To use CTProto JavaScript server implementation, follow next guide.
+To use CTProto JavaScript server implementation, follow the next guide.
 
 ```ts
 import { CTProtoServer } from './ctproto/server';
@@ -140,7 +140,7 @@ You can handle a message and optionally you can return a value (`object`) to res
 
 ## Client
 
-To use CTProto JavaScript client implementation, follow next guide.
+To use CTProto JavaScript client implementation, follow the next guide.
 
 ```ts
 import CTProtoClient from './client';
@@ -170,26 +170,28 @@ Where
 | `apiUrl` | _string_ | Requests will be made to this API. |
 | `authRequestPayload` | _AuthRequestPayload_ | Authorization request payload. |
 | `onAuth` | _(payload: AuthResponsePayload) => void_ | Method for handling authorization response. See details below |
-| `onMessage` | _(message: ApiUpdate) => void_ | Method for handling message inited by the server. See details below |
+| `onMessage` | _(message: ApiUpdate) => void_ | Method for handling message initialized by the server. See details below |
 
-###onAuth
+### onAuth()
 
 This callback will contain your application authorization response handler. It will accept the payload of the authorize response.
 
 You can implement your own authorization response handler in there.
 
-###onMessage
+### onMessage()
 
-This callback will be fired when the new message (inited by the server) accepted from the server. It will get a message object as a param.
+This callback will be fired when an `ApiUpdate` (new message initialized by the server) accepted from the server. It will get a message object as a param.
 
-###Send request
+### Sending requests
 
-You can send request and get response:
+You can send a request and get a response:
 
 ```ts
-Client.send(type, payload).then((responsePayload) => {
-    // do something with resopnse payload
-});
+client
+    .send(type, payload)
+    .then((responsePayload) => {
+        // do something with the response payload
+    });
 ```
 Where
 
@@ -202,15 +204,17 @@ Where
 Example
 
 ```ts
-Client.send('sum-of-numbers', {
-    a: 10,
-    b: 11,
-}).then((responsePayload) => {
-    console.log('Response: ',responsePayload);
-});
+client
+    .send('sum-of-numbers', {
+        a: 10,
+        b: 11,
+    })
+    .then((responsePayload) => {
+        console.log('Response: ', responsePayload);
+    });
 ```
 
-## About team
+## About us
 
 CodeX is a team of passionate engineers and designers, unifying students, graduates, and other young specialists around the world interested in making high-quality open-source projects and getting a priceless experience of making full-valued products on a global market.
 
