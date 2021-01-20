@@ -16,12 +16,7 @@ import MessageValidator from './messageValidator';
  * @template ApiRequest - the type described all available API request messages
  * @template ApiResponse - the type described all available API response messages
  */
-export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>> {
-  /**
-   * WebSocket server port
-   */
-  port?: number;
-
+export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>> extends ws.ServerOptions{
   /**
    * Method for socket authorization
    * Will be called when client will send the 'authorize' request.
@@ -88,15 +83,13 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param WebSocketsServer - allows to override the 'ws' dependency. Used for mocking it in tests.
    */
   constructor(options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse>, WebSocketsServer?: ws.Server) {
+    /**
+     * Do not save clients in ws.clients property
+     * because we will use own Map (this.ClientsList)
+     */
+    options.clientTracking = false
     this.options = options;
-    this.wsServer = WebSocketsServer || new ws.Server({
-      port: options.port,
-      /**
-       * Do not save clients in ws.clients property
-       * because we will use own Map (this.ClientsList)
-       */
-      clientTracking: false,
-    }, () => {
+    this.wsServer = WebSocketsServer || new ws.Server(this.options, () => {
       this.log(`Server is running at ws://localhost:${options.port}`);
     });
 
