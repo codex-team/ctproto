@@ -108,12 +108,10 @@ Where
 
 | option | type | description |
 | -- | -- | -- |
-| `port` | _number_ | The port where to bind the server. |
-| `path` | _string_ | Accept only connections matching this path. |
 | `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<AuthData>_ | Method for authorization. See details below |
 | `onMessage` | _(message: NewMessage) => Promise<void | object>_ | Message handler. See details below |
 
-and you can set any `ws.Server` options.
+and you can set any [ws.Server](https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback) options.
 
 ### onAuth()
 
