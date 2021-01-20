@@ -87,7 +87,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      * Do not save clients in ws.clients property
      * because we will use own Map (this.ClientsList)
      */
-    options.clientTracking = false
+    options.clientTracking = false;
     this.options = options;
     this.wsServer = WebSocketsServer || new ws.Server(this.options, () => {
       this.log(`Server is running at ws://localhost:${options.port}`);
