@@ -113,6 +113,8 @@ Where
 | `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<AuthData>_ | Method for authorization. See details below |
 | `onMessage` | _(message: NewMessage) => Promise<void | object>_ | Message handler. See details below |
 
+and you can set any `ws.Server` options.
+
 ### onAuth()
 
 This callback will contain your application authorization logic. It will accept the payload of the `authorize` request. 
