@@ -90,7 +90,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     options.clientTracking = false;
     this.options = options;
     this.wsServer = WebSocketsServer || new ws.Server(this.options, () => {
-      this.log(`Server is running at ws://localhost:${options.port}`);
+      this.log(`Server is running at ws://${options.host || 'localhost'}:${options.port}`);
     });
 
     /**
