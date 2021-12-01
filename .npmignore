@@ -5,3 +5,8 @@ tests/
 .github
 package-lock.json
 yarn.lock
+example
+src
+.editorconfig
+jest.config.js
+.parcel-cache

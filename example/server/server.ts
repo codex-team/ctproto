@@ -1,9 +1,9 @@
-import { CTProtoServer } from '../src/server';
-import { ApiRequest, ApiResponse, ApiUpdate } from './types';
-import { SumOfNumbersMessagePayload } from './types/requests/sumOfNumbers';
-import { authTokenMock } from './mocks/authorizeRequestPayload';
-import { AuthorizeMessagePayload } from './types/requests/authorize';
-import { AuthorizeResponsePayload } from './types/responses/authorize';
+import { CTProtoServer } from '../../build/src';
+import { ApiRequest, ApiResponse, ApiUpdate } from '../types';
+import { SumOfNumbersMessagePayload } from '../types/requests/sumOfNumbers';
+import { authTokenMock } from '../mocks/authorizeRequestPayload';
+import { AuthorizeMessagePayload } from '../types/requests/authorize';
+import { AuthorizeResponsePayload } from '../types/responses/authorize';
 
 /**
  * The example of some API method

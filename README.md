@@ -14,7 +14,7 @@ After connection to the endpoint specified by application, you need to send the 
 
 ### Message format
 
-All messages MUST fit next criteries:
+All messages MUST fit next criteria:
 
 - be a valid JSON-strings
 - has the next structure:
@@ -80,8 +80,16 @@ All errors will be sent to the client with structure like that:
 
 To use CTProto JavaScript server implementation, follow the next guide.
 
+Install a package
+
+```bash
+yarn add ctproto
+```
+
+Then, configure the server
+
 ```ts
-import { CTProtoServer } from './ctproto/server';
+import { CTProtoServer } from 'ctproto';
 
 const transport = new CTProtoServer({
   port: 4000,
@@ -142,8 +150,16 @@ You can handle a message and optionally you can return a value (`object`) to res
 
 To use CTProto JavaScript client implementation, follow the next guide.
 
+Install a package
+
+```bash
+yarn add ctproto
+```
+
+Then, configure the client
+
 ```ts
-import CTProtoClient from './client';
+import { CTProtoClient } from 'ctproto';
 
 const client = new CTProtoClient({
     apiUrl: 'ws://localhost:8080',
@@ -214,12 +230,26 @@ client
     });
 ```
 
-## About us
+## Using in TypeScript
 
-CodeX is a team of passionate engineers and designers, unifying students, graduates, and other young specialists around the world interested in making high-quality open-source projects and getting a priceless experience of making full-valued products on a global market.
+If you're using TS, you will need to create interfaces describing some CTProto objects: `AuthorizeMessagePayload`, `AuthorizeResponsePayload`, `ApiRequest`, `ApiResponse`, `ApiUpdate`.
 
-Follow us on Twitter: [twitter.com/codex_team](https://twitter.com/codex_team)
+| Type | Description | Example |
+| ---- | ----------- | --------|
+| `AuthorizeMessagePayload` | Payload of your `authorize` message. See [Authorization](#authorization). | Example: [/example/types/requests/authorize.ts](./example/types/requests/authorize.ts) |
+| `AuthorizeResponsePayload` | Payload of the response on your `authorize` message. See [Authorization](#authorization). | Example: [/example/types/responses/authorize.ts](./example/types/responses/authorize.ts) |
+| `ApiRequest` | All available messages that can be sent from the Client to the Server | Example: [/example/types/index.ts](./example/types/index.ts) | 
+| `ApiResponse` | All available messages that can be sent by the Server in response to Client requests | Example: [/example/types/index.ts](./example/types/index.ts) |
+| `ApiUpdate` | All available messages that can be sent by the Server to the Client | Example: [/example/types/index.ts](./example/types/index.ts) |
 
-Feel free to contact: <a href="mailto:team@codex.so?subject=CTProto">team@codex.so</a>
+All examples see at the [/example](./example) directory. 
 
-[codex.so](https://codex.so)
+# About CodeX
+
+<img align="right" width="120" height="120" src="https://codex.so/public/app/img/codex-logo.svg" hspace="50">
+
+CodeX is a team of digital specialists around the world interested in building high-quality open source products on a global market. We are [open](https://codex.so/join) for young people who want to constantly improve their skills and grow professionally with experiments in cutting-edge technologies.
+
+| 🌐 | Join  👋  | Twitter | Instagram |
+| -- | -- | -- | -- |
+| [codex.so](https://codex.so) | [codex.so/join](https://codex.so/join) |[@codex_team](http://twitter.com/codex_team) | [@codex_team](http://instagram.com/codex_team/) |
