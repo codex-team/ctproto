@@ -1,9 +1,9 @@
 {
   "name": "ctproto",
-  "version": "0.0.9",
+  "version": "0.0.13",
   "description": "CodeX Transport Protocol",
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
+  "main": "build/src/index",
+  "types": "build/src/index",
   "repository": "https://github.com/codex-team/ctproto.git",
   "author": "CodeX <team@codex.so>",
   "license": "MIT",

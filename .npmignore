@@ -6,7 +6,8 @@ tests/
 package-lock.json
 yarn.lock
 example
-src
+/src
 .editorconfig
 jest.config.js
 .parcel-cache
+/types

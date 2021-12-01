@@ -278,7 +278,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    */
   private onMessage(event: MessageEvent): void {
     try {
-      const message: Message<unknown> = JSON.parse(event.data.toString());
+      const message = JSON.parse(event.data.toString());
       const messageId = message.messageId;
 
       if ('type' in message) {
@@ -294,7 +294,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         request.cb(message.payload);
       }
     } catch (error) {
-      this.log(`${error.message}`, event.data);
+      this.log(`${(error as Error).message}`, event.data);
     }
   }
 

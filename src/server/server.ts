@@ -18,6 +18,24 @@ import MessageValidator from './messageValidator';
  */
 export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>> extends ws.ServerOptions{
   /**
+   * Allows overriding server host
+   * @example '0.0.0.0'
+   */
+  host?: string;
+
+  /**
+   * Allows overriding server port
+   * @example 8080
+   */
+  port?: number;
+
+  /**
+   * Allows overriding connection endpoint
+   * @example '/api'
+   */
+  path?: string;
+
+  /**
    * Method for socket authorization
    * Will be called when client will send the 'authorize' request.
    *
@@ -137,12 +155,14 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     try {
       MessageValidator.validateMessage(data as string);
     } catch (error) {
-      this.log(`Wrong message accepted: ${error.message} `, data);
+      const errorMessage = (error as Error).message;
+
+      this.log(`Wrong message accepted: ${errorMessage} `, data);
 
       if (error instanceof CriticalError) {
-        socket.close(CloseEventCode.UnsupportedData, error.message);
+        socket.close(CloseEventCode.UnsupportedData, errorMessage);
       } else {
-        socket.send(MessageFactory.createError('Message Format Error: ' + error.message));
+        socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
       }
 
       return;
@@ -158,7 +178,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         this.handleAuthorizedMessage(client, message);
       }
     } catch (error) {
-      this.log(`Error while processing a message: ${error.message}`, message);
+      this.log(`Error while processing a message: ${(error as Error).message}`, message);
     }
   }
 
@@ -188,7 +208,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       clientToSave.respond(message.messageId, authData);
     } catch (error) {
-      socket.close(CloseEventCode.PolicyViolation, 'Authorization failed: ' + error.message);
+      socket.close(CloseEventCode.PolicyViolation, 'Authorization failed: ' + (error as Error).message);
     }
   }
 
@@ -218,7 +238,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       client.respond(message.messageId, response);
     } catch (error) {
-      this.log('Internal error while processing a message: ', error.message);
+      this.log('Internal error while processing a message: ', (error as Error).message);
     }
   }
 

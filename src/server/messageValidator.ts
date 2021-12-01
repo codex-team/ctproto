@@ -28,7 +28,7 @@ export default class MessageValidator {
     try {
       parsedMessage = JSON.parse(message);
     } catch (parsingError) {
-      throw new MessageParseError(parsingError.message);
+      throw new MessageParseError((parsingError as Error).message);
     }
 
     /**

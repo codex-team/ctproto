@@ -1,4 +1,5 @@
 import { CTProtoClient } from '../../../build/src';
+// import { CTProtoClient } from 'ctproto';
 import { authorizeRequestPayloadMock } from '../../mocks/authorizeRequestPayload';
 import { ApiRequest, ApiResponse, ApiUpdate } from '../../types';
 import { AuthorizeMessagePayload } from '../../types/requests/authorize';
