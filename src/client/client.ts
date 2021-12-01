@@ -1,6 +1,5 @@
 import MessageFactory from '../messageFactory';
 import { Message, NewMessage, ResponseMessage } from '../../types';
-import WebSocket, { MessageEvent, CloseEvent, ErrorEvent } from 'ws';
 
 /**
  * Available options for the CTProtoClient
@@ -239,8 +238,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        *
        * @param event - error event
        */
-      this.socket.onerror = (event: ErrorEvent): void => {
-        this.log('Socket error: ', event.message);
+      this.socket.onerror = (event: Event): void => {
+        this.log('Socket error: ', event);
 
         reject(event);
       };

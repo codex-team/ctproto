@@ -1,0 +1,13 @@
+{
+  "name": "ctproto-example",
+  "version": "1.0.0",
+  "author": "CodeX",
+  "license": "MIT",
+  "source": "app/index.html",
+  "scripts": {
+    "start": "parcel"
+  },
+  "devDependencies": {
+    "parcel": "^2.0.1"
+  }
+}
