@@ -7,6 +7,8 @@ import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
+import { UploadedFile } from '../../types/file';
+import { Buffer } from 'buffer';
 
 /**
  * Available options for the CTProtoServer
@@ -90,6 +92,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   private readonly wsServer: ws.Server;
 
   /**
+   * Uploaded files
+   */
+  private uploadedFiles: Array<UploadedFile>;
+
+  /**
    * Configuration options passed on Transport initialization
    */
   private options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse>;
@@ -106,6 +113,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      * because we will use own Map (this.ClientsList)
      */
     options.clientTracking = false;
+    this.uploadedFiles = [];
     this.options = options;
     this.wsServer = WebSocketsServer || new ws.Server(this.options, () => {
       this.log(`Server is running at ws://${options.host || 'localhost'}:${options.port}`);
@@ -120,6 +128,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       let msgWaiter: NodeJS.Timeout;
       const msgWaitingTime = 3000;
+      socket.binaryType = 'nodebuffer';
 
       socket.on('message', (message: ws.Data) => {
         if (msgWaiter) {
@@ -152,33 +161,39 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param data - message data
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
-    try {
-      MessageValidator.validateMessage(data as string);
-    } catch (error) {
-      const errorMessage = (error as Error).message;
+    if (typeof data === 'string') {
+      try {
+        MessageValidator.validateMessage(data as string);
+      } catch (error) {
+        const errorMessage = (error as Error).message;
 
-      this.log(`Wrong message accepted: ${errorMessage} `, data);
+        this.log(`Wrong message accepted: ${errorMessage} `, data);
 
-      if (error instanceof CriticalError) {
-        socket.close(CloseEventCode.UnsupportedData, errorMessage);
-      } else {
-        socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
+        if (error instanceof CriticalError) {
+          socket.close(CloseEventCode.UnsupportedData, errorMessage);
+        } else {
+          socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
+        }
+
+        return;
       }
-
-      return;
     }
-
-    const message = JSON.parse(data as string);
     const client = this.clients.find((c) => c.socket === socket).current();
 
     try {
       if (client === undefined) {
+        const message = JSON.parse(data as string);
         this.handleFirstMessage(socket, message);
       } else {
-        this.handleAuthorizedMessage(client, message);
+        if (data instanceof Buffer){
+          this.handleBufferMessage(client, data)
+        } else {
+          const message = JSON.parse(data as string);
+          this.handleAuthorizedMessage(client, message);
+        }
       }
     } catch (error) {
-      this.log(`Error while processing a message: ${(error as Error).message}`, message);
+      this.log(`Error while processing a message: ${(error as Error).message}`, data);
     }
   }
 
@@ -239,6 +254,74 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       client.respond(message.messageId, response);
     } catch (error) {
       this.log('Internal error while processing a message: ', (error as Error).message);
+    }
+  }
+
+  /**
+   * Process not-first buffer message.
+   *
+   * @param client - connected client
+   * @param message - accepted message
+   */
+  private async handleBufferMessage(client: Client<AuthData, ApiResponse, ApiUpdate>, message: Buffer): Promise<void> {
+    /**
+     * Parsing meta data from buffer message
+     */
+    const messageId = message.slice(0,10).toString();
+    const fileId = message.slice(10,20).toString();
+    const chunkNumber = (message.readInt8(20));
+
+    let data;
+
+    /**
+     * Meta data of the first chunk includes additional information
+     */
+    if ( chunkNumber == 0 ) {
+
+      /**
+       * Create new file to upload
+       */
+      this.uploadedFiles.push( { id: fileId, file: [], payloadChunks: message.readInt8(21), chunks: message.readInt8(22)} );
+      data = message.slice(23);
+    } else {
+      data = message.slice(21)
+    }
+
+    const file = this.uploadedFiles.find((req) => req.id === fileId);
+    if (file){
+      /**
+       * Pushes chunk to uploaded file
+       */
+      file.file.push(data)
+
+      /**
+       * Checks if payload data can be parsed
+       */
+      if ( chunkNumber == file.payloadChunks -1 ) {
+        let payloadBuffer = new Buffer(0)
+        for ( let payloadChunk of file.file.slice(0, file.payloadChunks) ) {
+          payloadBuffer = Buffer.concat([payloadBuffer, payloadChunk])
+        }
+        let payload = payloadBuffer.toString();
+        file.payload = JSON.parse(payload);
+      }
+
+      /**
+       * Checks if file data can be parsed
+       */
+      if (file.file.length - file.payloadChunks == file.chunks){
+
+        /**
+         * Parsing only file data
+         */
+        if (file.file) {
+          let fileChunks = file.file.slice(file.payloadChunks)
+          let fileData = new Buffer(0);
+          for (let chunk of fileChunks) {
+            fileData = Buffer.concat([fileData, chunk]);
+          }
+        }
+      }
     }
   }
 
