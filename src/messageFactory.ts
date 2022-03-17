@@ -27,6 +27,33 @@ export default class MessageFactory {
   }
 
   /**
+   * Creates the message for uploading
+   *
+   * @template MessagePayload - the type describing structure of the message payload
+   *
+   * @param type - type of request
+   * @param payload - data to send
+   */
+  public static createForUpload<MessagePayload>(type: string, payload: MessagePayload): string {
+    return JSON.stringify({
+      type,
+      payload,
+      messageId: MessageFactory.createMessageId(),
+    } as NewMessage<MessagePayload>);
+  }
+
+  /**
+   * Creates the buffer message
+   *
+   * @param fileId - file id
+   * @param unit - buffer of some meta data
+   * @param bufData - chunk of file data to send
+   */
+  public static createBufferMessage(fileId: string, unit: Buffer, bufData: Buffer): Buffer {
+    return Buffer.concat( [Buffer.from(MessageFactory.createMessageId()), Buffer.from(fileId), unit, bufData] );
+  }
+
+  /**
    * Creates the RespondMessage
    *
    * @template MessagePayload - the type describing structure of the message payload
@@ -61,7 +88,7 @@ export default class MessageFactory {
   /**
    * Creates unique message id
    */
-  private static createMessageId(): string {
+  public static createMessageId(): string {
     return nanoid(idLength);
   }
 }

@@ -69,6 +69,21 @@ interface Request<MessagePayload> {
 }
 
 /**
+ * Files to upload
+ */
+interface FileToPayload {
+  /**
+   * File id
+   */
+  id: string;
+
+  /**
+   * Chunks to send
+   */
+  chunks: Array<Buffer>;
+}
+
+/**
  * Message that is waiting for sending
  */
 interface EnqueuedMessage<ApiRequest extends NewMessage<unknown>> {
@@ -122,6 +137,16 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private enqueuedMessages: Array<EnqueuedMessage<ApiRequest>> = [];
 
   /**
+   * Uploading files
+   */
+  private filesToUpload: Array<FileToPayload> = [];
+
+  /**
+   * Limit for chunk size
+   */
+  private readonly bufferLimit = 50;
+
+  /**
    * Reconnection tries Timeout
    */
   private reconnectionTimer: unknown;
@@ -146,6 +171,154 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     this.options = options;
 
     this.init();
+  }
+
+  /**
+   * This method sends file requests
+   *
+   * @param type - available type of requests
+   * @param file - file to send
+   * @param payload - available request payload
+   */
+  public async sendFile(
+    type: ApiRequest['type'],
+    file: Buffer,
+    payload: ApiRequest['payload'],
+  ): Promise<ApiResponse['payload']> {
+    return new Promise( resolve => {
+      let chunks = 1;
+
+      /**
+       * Space for data chunk without meta
+       */
+      let spaceForFrame = this.bufferLimit-21;
+
+      const fileId = MessageFactory.createMessageId();
+
+      /**
+       * Calculate number of chunks
+       */
+      if (file.length > this.bufferLimit) {
+        chunks = Math.ceil((file.length)/spaceForFrame);
+      }
+
+      /**
+       * Creates message file payload
+       */
+      const message = MessageFactory.createForUpload(type, payload);
+      const bufMessage = Buffer.from(message);
+
+      /**
+       * Calculate number of chunks, which include payload information
+       */
+      const payloadChunks = Math.ceil((bufMessage.length+2)/(spaceForFrame));
+
+      /**
+       * Create 3 bytes for meta data in the first chunk ( chunk number, number of payload chunks and number of file chunks )
+       */
+      let unit = new Buffer(3);
+      unit.writeInt8(0, 0);
+      unit.writeInt8(payloadChunks, 1);
+      unit.writeInt8(chunks, 2);
+
+      /**
+       * Creates buffer message to send
+       */
+      const firstChunk = MessageFactory.createBufferMessage(fileId, unit, bufMessage.slice(0, spaceForFrame-2));
+
+      /**
+       * Added new file to upload
+       */
+      this.filesToUpload.push({ id: fileId,
+        chunks: [firstChunk]});
+
+      if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+        this.log(`Cannot send a message «${type}» for now because the connection is not opened. Enqueueing...`);
+      } else {
+        console.log(firstChunk.length)
+        this.socket?.send(firstChunk);
+      }
+      const uploadingFile = this.filesToUpload.find((req) => req.id === fileId);
+
+      /**
+       * Cycle, which sends payload chunks
+       */
+      for (let i = 1; i<payloadChunks; i++) {
+
+        let size = spaceForFrame;
+
+        /**
+         * Calculate the remaining amount of payload data
+         */
+        const ost = bufMessage.length + 2  - spaceForFrame*i;
+
+        if (ost < spaceForFrame) {
+          size = ost
+        }
+
+        /**
+         * Creates meta data ( chunk number )
+         */
+        let unit = new Buffer(1);
+        unit.writeInt8(i, 0)
+
+        /**
+         * Creates buffer message to send
+         */
+        const chunk = MessageFactory.createBufferMessage(fileId, unit, bufMessage.slice(spaceForFrame*i -2, spaceForFrame * i + size -2 ));
+
+        /**
+         * Pushes chunk to uploaded file
+         */
+        uploadingFile!.chunks.push(chunk);
+        if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+          this.log(`Cannot send a message «${type}» for now because the connection is not opened. Enqueueing...`);
+        } else {
+          this.socket?.send(chunk);
+        }
+
+      }
+
+      /**
+       * Cycle, which sends file chunks
+       */
+      for (let i = 0; i<chunks; i++) {
+        let size = spaceForFrame;
+
+        /**
+         * Calculate the remaining amount of file data
+         */
+        const ost = file.length - spaceForFrame * i;
+
+        if (ost < spaceForFrame) {
+          size = ost;
+        }
+
+        /**
+         * Creates meta data ( chunk number )
+         */
+        let unit8 = new Buffer(1);
+        unit8.writeInt8(i+payloadChunks, 0);
+
+        /**
+         * Creates buffer message to send
+         */
+        const chunk = MessageFactory.createBufferMessage(fileId, unit8, file.slice(spaceForFrame * i, spaceForFrame * i + size));
+
+        const uploadingFile = this.filesToUpload.find(( req ) => req.id === fileId);
+
+        /**
+         * Pushes chunk to uploaded file
+         */
+        uploadingFile!.chunks.push(chunk);
+
+        if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+          this.log(`Cannot send a message «${type}» for now because the connection is not opened. Enqueueing...`);
+        } else {
+          this.socket?.send(chunk);
+        }
+      }
+    })
   }
 
   /**
