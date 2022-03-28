@@ -186,7 +186,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     payload: ApiRequest['payload'],
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
-      let chunks = 1;
 
       let metaLength = 21;
 
@@ -197,7 +196,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const fileId = MessageFactory.createMessageId();
 
-      chunks = this.calculateChunkNumber(file.length, spaceForFrame);
+      let chunks = this.calculateChunkNumber(file.length, spaceForFrame);
 
       /**
        * Creates message file payload
@@ -267,13 +266,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Creates meta data ( chunk number )
        */
-      let unit8 = new Buffer(1);
-      unit8.writeInt8(i+payloadChunks, 0);
+      let meta = this.createBufferForMeta(i+payloadChunks)
 
       /**
        * Creates buffer message to send
        */
-      const chunk = MessageFactory.createBufferMessage(fileId, unit8, file.slice(spaceForFrame * i, spaceForFrame * i + size));
+      const chunk = MessageFactory.createBufferMessage(fileId, meta, file.slice(spaceForFrame * i, spaceForFrame * i + size));
 
       const uploadingFile = this.filesToUpload.find(( req ) => req.id === fileId);
 
@@ -320,13 +318,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Creates meta data ( chunk number )
        */
-      let unit = new Buffer(1);
-      unit.writeInt8(i, 0)
+      let meta = this.createBufferForMeta(i)
 
       /**
        * Creates buffer message to send
        */
-      const chunk = MessageFactory.createBufferMessage(fileId, unit, bufMessage.slice(spaceForFrame*i -2, spaceForFrame * i + size -2 ));
+      const chunk = MessageFactory.createBufferMessage(fileId, meta, bufMessage.slice(spaceForFrame*i -2, spaceForFrame * i + size -2 ));
 
       /**
        * Pushes chunk to uploaded file
