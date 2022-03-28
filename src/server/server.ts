@@ -92,7 +92,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   private readonly wsServer: ws.Server;
 
   /**
-   * Uploaded files
+   * Files which are uploading to the server at this time
    */
   private uploadedFiles: Array<UploadedFile>;
 
@@ -128,6 +128,10 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       let msgWaiter: NodeJS.Timeout;
       const msgWaitingTime = 3000;
+
+      /**
+       * Set type of incoming binary data to Buffer
+       */
       socket.binaryType = 'nodebuffer';
 
       socket.on('message', (message: ws.Data) => {
@@ -161,23 +165,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param data - message data
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
-    if (typeof data === 'string') {
-      try {
-        MessageValidator.validateMessage(data as string);
-      } catch (error) {
-        const errorMessage = (error as Error).message;
 
-        this.log(`Wrong message accepted: ${errorMessage} `, data);
+    this.parseIfString(data, socket);
 
-        if (error instanceof CriticalError) {
-          socket.close(CloseEventCode.UnsupportedData, errorMessage);
-        } else {
-          socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
-        }
-
-        return;
-      }
-    }
     const client = this.clients.find((c) => c.socket === socket).current();
 
     try {
@@ -194,6 +184,32 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       }
     } catch (error) {
       this.log(`Error while processing a message: ${(error as Error).message}`, data);
+    }
+  }
+
+  /**
+   * Method for string message
+   *
+   * @param socket - socket
+   * @param data - message data
+   */
+  private async parseIfString(data: any, socket: ws): Promise<void> {
+    if (typeof data === 'string') {
+      try {
+        MessageValidator.validateMessage(data as string);
+      } catch (error) {
+        const errorMessage = (error as Error).message;
+
+        this.log(`Wrong message accepted: ${errorMessage} `, data);
+
+        if (error instanceof CriticalError) {
+          socket.close(CloseEventCode.UnsupportedData, errorMessage);
+        } else {
+          socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
+        }
+
+        return;
+      }
     }
   }
 
@@ -273,18 +289,23 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
 
     let data;
 
+    let dataSlice = 21;
     /**
      * Meta data of the first chunk includes additional information
      */
     if ( chunkNumber == 0 ) {
+      const offsetForPayloadChunks = 21;
+
+      const offsetForFileChunks = 22;
 
       /**
        * Create new file to upload
        */
-      this.uploadedFiles.push( { id: fileId, file: [], payloadChunks: message.readInt8(21), chunks: message.readInt8(22)} );
-      data = message.slice(23);
+      this.uploadedFiles.push( { id: fileId, file: [], payloadChunks: message.readInt8(offsetForPayloadChunks), chunks: message.readInt8(offsetForFileChunks)} );
+      dataSlice = 23;
+      data = message.slice(dataSlice);
     } else {
-      data = message.slice(21)
+      data = message.slice(dataSlice);
     }
 
     const file = this.uploadedFiles.find((req) => req.id === fileId);

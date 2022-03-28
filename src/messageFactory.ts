@@ -27,22 +27,6 @@ export default class MessageFactory {
   }
 
   /**
-   * Creates the message for uploading
-   *
-   * @template MessagePayload - the type describing structure of the message payload
-   *
-   * @param type - type of request
-   * @param payload - data to send
-   */
-  public static createForUpload<MessagePayload>(type: string, payload: MessagePayload): string {
-    return JSON.stringify({
-      type,
-      payload,
-      messageId: MessageFactory.createMessageId(),
-    } as NewMessage<MessagePayload>);
-  }
-
-  /**
    * Creates the buffer message
    *
    * @param fileId - file id
