@@ -9,6 +9,7 @@ import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
 import { UploadedFile } from '../../types/file';
 import { Buffer } from 'buffer';
+import fs from "fs";
 
 /**
  * Available options for the CTProtoServer
@@ -283,65 +284,61 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Parsing meta data from buffer message
      */
-    const messageId = message.slice(0,10).toString();
-    const fileId = message.slice(10,20).toString();
-    const chunkNumber = (message.readInt8(20));
+    const fileId = message.slice(0,10).toString();
+    const chunkNumber = (message.readInt8(10));
+    const size = (message.readInt8(11));
 
-    let data;
+    /**
+     * Getting file data
+     */
+    let data = message.slice(12, 12+size);
 
-    let dataSlice = 21;
+    /**
+     * Parsing payload message in buffer message
+     */
+    let strPayload = message.slice(12 + size).toString();
+
+    const payload = JSON.parse(strPayload);
+
+    let file = this.uploadedFiles.find((req) => req.id === fileId);
+
     /**
      * Meta data of the first chunk includes additional information
      */
     if ( chunkNumber == 0 ) {
-      const offsetForPayloadChunks = 21;
-
-      const offsetForFileChunks = 22;
 
       /**
-       * Create new file to upload
+       * Create new file to upload or add some data
        */
-      this.uploadedFiles.push( { id: fileId, file: [], payloadChunks: message.readInt8(offsetForPayloadChunks), chunks: message.readInt8(offsetForFileChunks)} );
-      dataSlice = 23;
-      data = message.slice(dataSlice);
-    } else {
-      data = message.slice(dataSlice);
-    }
-
-    const file = this.uploadedFiles.find((req) => req.id === fileId);
-    if (file){
-      /**
-       * Pushes chunk to uploaded file
-       */
-      file.file.push(data)
-
-      /**
-       * Checks if payload data can be parsed
-       */
-      if ( chunkNumber == file.payloadChunks -1 ) {
-        let payloadBuffer = new Buffer(0)
-        for ( let payloadChunk of file.file.slice(0, file.payloadChunks) ) {
-          payloadBuffer = Buffer.concat([payloadBuffer, payloadChunk])
-        }
-        let payload = payloadBuffer.toString();
-        file.payload = JSON.parse(payload);
+      if (file) {
+        file.file[0] = data;
+        file.chunks = payload.chunks;
+        file.type = payload.type;
+        file.payload = payload.payload;
+      } else {
+        this.uploadedFiles.push( {id: fileId, file: [data], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
       }
-
-      /**
-       * Checks if file data can be parsed
-       */
-      if (file.file.length - file.payloadChunks == file.chunks){
+    } else {
+      if (file) {
 
         /**
-         * Parsing only file data
+         * Push file data
          */
-        if (file.file) {
-          let fileChunks = file.file.slice(file.payloadChunks)
-          let fileData = new Buffer(0);
-          for (let chunk of fileChunks) {
+        file.file.push(data);
+        if (chunkNumber == file.chunks!-1) {
+          let fileData = Buffer.alloc(0);
+          for (let chunk of file.file) {
             fileData = Buffer.concat([fileData, chunk]);
           }
         }
+      } else {
+
+        /**
+         * Create new uploading file
+         */
+        this.uploadedFiles.push({ id: fileId, file: [] });
+        let file = this.uploadedFiles.find((req) => req.id === fileId);
+        file!.file[chunkNumber] = data;
       }
     }
   }
