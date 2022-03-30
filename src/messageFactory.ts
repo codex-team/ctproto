@@ -27,14 +27,32 @@ export default class MessageFactory {
   }
 
   /**
+   * Creates the message for chunk
+   *
+   * @template MessagePayload - the type describing structure of the message payload
+   *
+   * @param type - request type
+   * @param payload - message for chunk
+   * @param chunks - number of chunks
+   */
+  public static createForUpload<MessagePayload>(type: string, payload: MessagePayload, chunks?: number): string {
+    return JSON.stringify({
+      type,
+      payload,
+      chunks,
+    });
+  }
+
+  /**
    * Creates the buffer message
    *
    * @param fileId - file id
-   * @param unit - buffer of some meta data
-   * @param bufData - chunk of file data to send
+   * @param bufData - buffer of file and meta data
+   * @param message - message to send with chunk
    */
-  public static createBufferMessage(fileId: string, unit: Buffer, bufData: Buffer): Buffer {
-    return Buffer.concat( [Buffer.from(MessageFactory.createMessageId()), Buffer.from(fileId), unit, bufData] );
+  public static createBufferMessage(fileId: string, bufData: Buffer, message: string): Buffer {
+    const bufMessage = Buffer.from(message);
+    return Buffer.concat( [Buffer.from(fileId), bufData, bufMessage] );
   }
 
   /**
