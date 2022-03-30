@@ -137,6 +137,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private enqueuedMessages: Array<EnqueuedMessage<ApiRequest>> = [];
 
   /**
+   * Buffer messages that are waiting for sending
+   * (for example, when the 'send' called before the connection is established)
+   */
+  private enqueuedBufferMessages: Array<Buffer> = [];
+
+  /**
    * Uploading files
    */
   private filesToUpload: Array<FileToPayload> = [];
@@ -236,20 +242,31 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param message - additional info for chunk
    * @param fileId - id of sending file
    */
-  public sendChunk(chunk: Buffer, chunkNumber: number, message: string, fileId: string): void {
-
+  public sendChunk(chunk: Buffer, chunkNumber?: number, message?: string, fileId?: string): void {
     /**
      * Create meta data for chunk
      */
-    const meta = Buffer.alloc(2);
-    meta.writeInt8(chunkNumber, 0);
-    meta.writeInt8(chunk.length, 1);
-    const data = Buffer.concat([meta, chunk])
-    const bufferMessage = MessageFactory.createBufferMessage(fileId, data, message);
-    if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
-      this.log(`Cannot send a message for now because the connection is not opened. Enqueueing...`);
+    if (!(chunkNumber) && !(message) && !(fileId)) {
+      if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+        this.log(`Cannot send a message for now because the connection is not opened. Enqueueing...`);
+        this.enqueuedBufferMessages.push(chunk);
+      } else {
+        console.log(chunk)
+        this.socket?.send(chunk);
+      }
     } else {
-      this.socket?.send(bufferMessage);
+      const meta = Buffer.alloc(2);
+      meta.writeInt8(chunkNumber!, 0);
+      meta.writeInt8(chunk.length, 1);
+      const data = Buffer.concat([meta, chunk])
+      const bufferMessage = MessageFactory.createBufferMessage(fileId!, data, message!);
+      if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+        this.log(`Cannot send a message for now because the connection is not opened. Enqueueing...`);
+        console.log(chunkNumber)
+        this.enqueuedBufferMessages.push(bufferMessage);
+      } else {
+        this.socket?.send(bufferMessage);
+      }
     }
   }
 
@@ -363,12 +380,14 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
             this.options.onAuth(responsePayload as AuthResponsePayload);
 
-            if (this.enqueuedMessages.length > 0) {
+            if (this.enqueuedMessages.length > 0 || this.enqueuedBufferMessages.length > 0) {
               const len = this.enqueuedMessages.length;
 
               this.log(`There ${len === 1 ? 'is a message' : 'are ' + len + ' messages'} in queue:`, this.enqueuedMessages.map(m => m.type));
 
               this.sendEnqueuedMessages();
+
+              this.sendEnqueuedBufferMessages();
             }
 
             resolve();
@@ -413,6 +432,19 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       if (messageToSend) {
         this.send(messageToSend['type'], messageToSend['payload'], messageToSend['callback']);
+      }
+    }
+  }
+
+  /**
+   * Send all the enqueued buffer messages
+   */
+  private sendEnqueuedBufferMessages(): void {
+    while (this.enqueuedBufferMessages.length > 0) {
+      const messageToSend = this.enqueuedBufferMessages.shift();
+
+      if (messageToSend) {
+        this.sendChunk(messageToSend);
       }
     }
   }
