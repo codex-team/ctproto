@@ -40,6 +40,7 @@ export default class MessageFactory {
       type,
       payload,
       chunks,
+      id: MessageFactory.createMessageId(),
     });
   }
 

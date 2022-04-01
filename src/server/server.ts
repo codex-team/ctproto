@@ -9,7 +9,6 @@ import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
 import { UploadedFile } from '../../types/file';
 import { Buffer } from 'buffer';
-import fs from "fs";
 
 /**
  * Available options for the CTProtoServer
@@ -340,6 +339,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         let file = this.uploadedFiles.find((req) => req.id === fileId);
         file!.file[chunkNumber] = data;
       }
+    }
+    if (file?.chunks) {
+      const percent = file.file.filter(Boolean).length/file.chunks * 100;
+
+      client.respond(payload.id, { percent: Math.floor(percent)+'%', type: file?.type, fileId: fileId });
     }
   }
 
