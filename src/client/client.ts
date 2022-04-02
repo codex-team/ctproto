@@ -255,10 +255,13 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         this.socket?.send(chunk);
       }
     } else {
-      const meta = Buffer.alloc(2);
-      meta.writeInt8(chunkNumber!, 0);
-      meta.writeInt8(chunk.length, 1);
-      const data = Buffer.concat([meta, chunk])
+      const metaChunkNumber = Buffer.alloc(4);
+      metaChunkNumber.writeInt32BE(chunkNumber!);
+
+      const metaSize = Buffer.alloc(4);
+      metaSize.writeInt32BE(chunk.length);
+
+      const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
       const bufferMessage = MessageFactory.createBufferMessage(fileId!, data, message!);
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
         this.log(`Cannot send a message for now because the connection is not opened. Enqueueing...`);
