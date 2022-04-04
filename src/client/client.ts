@@ -71,7 +71,7 @@ interface Request<MessagePayload> {
 /**
  * Files to upload
  */
-interface FileToPayload {
+interface FileToUpload {
   /**
    * File id
    */
@@ -145,7 +145,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * Uploading files
    */
-  private filesToUpload: Array<FileToPayload> = [];
+  private filesToUpload: Array<FileToUpload> = [];
 
   /**
    * Limit for chunk size
