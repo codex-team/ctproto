@@ -1,4 +1,4 @@
-import { CTProtoServer } from '../../build/src';
+import { CTProtoServer } from '../../src';
 import {ApiFileRequest, ApiRequest, ApiResponse, ApiUpdate} from '../types';
 import { SumOfNumbersMessagePayload } from '../types/requests/sumOfNumbers';
 import { authTokenMock } from '../mocks/authorizeRequestPayload';
