@@ -283,19 +283,24 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Parsing meta data from buffer message
      */
-    const fileId = message.slice(0,10).toString();
-    const chunkNumber = (message.readInt32BE(10));
-    const size = (message.readInt32BE(14));
+    const fileIdSlice = 10;
+    const chunkNumberOffset = 10;
+    const sizeOffset = 14;
+
+    const fileId = message.slice(0,fileIdSlice).toString();
+    const chunkNumber = (message.readInt32BE(chunkNumberOffset));
+    const size = (message.readInt32BE(sizeOffset));
 
     /**
      * Getting file data
      */
-    let data = message.slice(18, 18+size);
+    const dataSlice = 18;
+    let data = message.slice(dataSlice, dataSlice+size);
 
     /**
      * Parsing payload message in buffer message
      */
-    let strPayload = message.slice(18 + size).toString();
+    let strPayload = message.slice(dataSlice + size).toString();
 
     const payload = JSON.parse(strPayload);
 

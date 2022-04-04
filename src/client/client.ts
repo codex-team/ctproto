@@ -248,10 +248,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
      */
     if (!(chunkNumber) && !(message) && !(fileId)) {
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
-        this.log(`Cannot send a message for now because the connection is not opened. Enqueueing...`);
         this.enqueuedBufferMessages.push(chunk);
       } else {
-        console.log(chunk)
         this.socket?.send(chunk);
       }
     } else {
@@ -264,8 +262,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
       const bufferMessage = MessageFactory.createBufferMessage(fileId!, data, message!);
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
-        this.log(`Cannot send a message for now because the connection is not opened. Enqueueing...`);
-        console.log(chunkNumber)
         this.enqueuedBufferMessages.push(bufferMessage);
       } else {
         this.socket?.send(bufferMessage);
