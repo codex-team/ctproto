@@ -329,7 +329,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
          * Push file data
          */
         file.file.push(data);
-        const response = await this.parseFileDataIfReady(file);
       } else {
 
         /**
@@ -344,6 +343,12 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       const percent = file.file.filter(Boolean).length/file.chunks * 100;
 
       client.respond(payload.id, { percent: Math.floor(percent)+'%', type: file?.type, fileId: fileId });
+
+      const response = await this.parseFileDataIfReady(file);
+
+      if (response) {
+        client.respond(file.id, response)
+      }
     }
   }
 

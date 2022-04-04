@@ -71,7 +71,7 @@ interface Request<MessagePayload> {
 /**
  * Files to upload
  */
-interface FileToUpload {
+interface FileToUpload<MessagePayload> {
   /**
    * File id
    */
@@ -81,6 +81,13 @@ interface FileToUpload {
    * Chunks to send
    */
   chunks: Array<Buffer>;
+
+  /**
+   * Callback, which will called when response comes.
+   *
+   * @param data - message payload
+   */
+  cb?: RequestCallback<MessagePayload>;
 }
 
 /**
@@ -145,7 +152,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * Uploading files
    */
-  private filesToUpload: Array<FileToUpload> = [];
+  private filesToUpload: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
 
   /**
    * Limit for chunk size
@@ -185,14 +192,22 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param type - available type of requests
    * @param file - file to send
    * @param payload - available request payload
+   * @param [callback] - already created callback in case of sending the enqueued message
    */
   public async sendFile(
     type: ApiRequest['type'],
     file: Buffer,
     payload: ApiRequest['payload'],
+    callback?: RequestCallback<ApiRequest['payload']>,
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
       let chunks = 1;
+
+      if (!callback) {
+        callback = (response: ApiResponse['payload']) => {
+          resolve(response);
+        };
+      }
 
       const fileId = MessageFactory.createMessageId();
 
@@ -416,13 +431,17 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const payload = message.payload;
       if ('fileId' in payload) {
         console.log('CTProto 💖 File', message.payload.fileId, 'uploaded on', message.payload.percent);
-      }
-
-      if ('type' in message) {
+      } else if ('type' in message) {
         this.options.onMessage(message);
       }
 
       const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
+
+      const file = this.filesToUpload.find(req => req.id === messageId);
+
+      if (file && typeof file.cb == 'function') {
+        file.cb(message.payload);
+      }
 
       /**
        * If we found requests and we have cb we do cb function
