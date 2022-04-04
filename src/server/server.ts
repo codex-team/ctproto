@@ -7,7 +7,7 @@ import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
-import { UploadedFile } from '../../types/file';
+import { FileRequest, UploadedFile } from '../../types/file';
 import { Buffer } from 'buffer';
 
 /**
@@ -53,7 +53,7 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
    * @param message - full message data
    * @returns optionally can return any data to respond to client
    */
-  onMessage: (message: ApiRequest) => Promise<void | ApiResponse['payload']>;
+  onMessage: (message: ApiRequest | FileRequest) => Promise<void | ApiResponse['payload']>;
 
   /**
    * Allows to disable validation/authorization and other warning messages
@@ -329,12 +329,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
          * Push file data
          */
         file.file.push(data);
-        if (chunkNumber == file.chunks!-1) {
-          let fileData = Buffer.alloc(0);
-          for (let chunk of file.file) {
-            fileData = Buffer.concat([fileData, chunk]);
-          }
-        }
+        const response = await this.parseFileDataIfReady(file);
       } else {
 
         /**
@@ -349,6 +344,31 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       const percent = file.file.filter(Boolean).length/file.chunks * 100;
 
       client.respond(payload.id, { percent: Math.floor(percent)+'%', type: file?.type, fileId: fileId });
+    }
+  }
+
+  /**
+   * Parse and hand over to onMessage if file data is full
+   *
+   * @param file - uploading file
+   */
+  private async parseFileDataIfReady(file: UploadedFile): Promise <void | ApiResponse['payload']> {
+    if (file.file.filter(Boolean).length/file.chunks! == 1){
+      let fileData = Buffer.alloc(0);
+
+      for (let chunk of file.file) {
+        fileData = Buffer.concat([fileData, chunk]);
+      }
+
+      const parsedFile = {
+        type: file.type!,
+        payload: file.payload,
+        file: fileData,
+      }
+
+      return await this.options.onMessage(parsedFile);
+    } else {
+      return;
     }
   }
 

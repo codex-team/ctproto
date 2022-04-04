@@ -243,8 +243,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param fileId - id of sending file
    */
   public sendChunk(chunk: Buffer, chunkNumber?: number, message?: string, fileId?: string): void {
+
     /**
-     * Create meta data for chunk
+     * Sends enqueued messages
      */
     if (!(chunkNumber) && !(message) && !(fileId)) {
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
@@ -253,12 +254,19 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         this.socket?.send(chunk);
       }
     } else {
+
+      /**
+       * Create meta data for chunk
+       */
       const metaChunkNumber = Buffer.alloc(4);
       metaChunkNumber.writeInt32BE(chunkNumber!);
 
       const metaSize = Buffer.alloc(4);
       metaSize.writeInt32BE(chunk.length);
 
+      /**
+       * Unite meta with file data
+       */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
       const bufferMessage = MessageFactory.createBufferMessage(fileId!, data, message!);
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {

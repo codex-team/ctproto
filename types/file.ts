@@ -1,4 +1,4 @@
-import {Buffer} from "buffer";
+import { Buffer } from "buffer";
 
 /**
  * Data for files to upload
@@ -28,4 +28,25 @@ export interface UploadedFile {
    * Number of file chunks
    */
   chunks?: number
+}
+
+/**
+ * Interface for file data which is uploaded
+ */
+export interface FileRequest {
+
+  /**
+   * Request type
+   */
+  type: string,
+
+  /**
+   * Some client additional info
+   */
+  payload: any,
+
+  /**
+   * File data
+   */
+  file: Buffer,
 }

@@ -1,5 +1,5 @@
 import { CTProtoServer } from '../../build/src';
-import { ApiRequest, ApiResponse, ApiUpdate } from '../types';
+import {ApiFileRequest, ApiRequest, ApiResponse, ApiUpdate} from '../types';
 import { SumOfNumbersMessagePayload } from '../types/requests/sumOfNumbers';
 import { authTokenMock } from '../mocks/authorizeRequestPayload';
 import { AuthorizeMessagePayload } from '../types/requests/authorize';
@@ -32,7 +32,7 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
 
       throw new Error('Example of unsuccessful auth');
     },
-    async onMessage(message: ApiRequest): Promise<ApiResponse['payload'] | void> {
+    async onMessage(message: ApiRequest | ApiFileRequest): Promise<ApiResponse['payload'] | void> {
       if (message.type == 'sum-of-numbers') {
         return {
           sum: sumNumbers(message.payload),
