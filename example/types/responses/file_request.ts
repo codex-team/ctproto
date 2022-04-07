@@ -1,16 +1,16 @@
 import { ResponseMessage } from '../../../types';
 
 /**
- * Sum of numbers response payload
+ * File response payload
  */
 export interface FileRequestResponsePayload {
     /**
-     * Sum of 2 numbers
+     * Path of file
      */
     path: string;
 }
 
 /**
- * Describes the response of the sum of numbers
+ * Describes the response file uploading
  */
 export default interface FileRequestResponse extends ResponseMessage<FileRequestResponsePayload> {}

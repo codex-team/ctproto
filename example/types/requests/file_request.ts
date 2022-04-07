@@ -1,18 +1,30 @@
 import { NewMessage } from '../../../src';
-import * as Buffer from "buffer";
+import * as Buffer from 'buffer';
 
 /**
- * 2 numbers
+ * File request payload
  */
-export interface SFileMessagePayload {
+export interface FileMessagePayload {
+
+  /**
+   * File name
+   */
   fileName: string;
 }
 
 
 /**
- * Describes the request for sum of 2 numbers
+ * File message
  */
-export default interface FileRequestMessage extends NewMessage<SFileMessagePayload> {
+export default interface FileRequestMessage extends NewMessage<FileMessagePayload> {
+
+  /**
+   * File request type
+   */
   type: 'file-request';
+
+  /**
+   * File data
+   */
   file: Buffer;
 }
