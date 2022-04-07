@@ -406,6 +406,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         file: fileData,
       } as ApiFileRequest
 
+      this.uploadedFiles.splice(this.uploadedFiles.indexOf(file), 1);
       return await this.options.onMessage(parsedFile);
     } else {
       return;

@@ -441,6 +441,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       if (file && typeof file.cb == 'function') {
         file.cb(message.payload);
+        this.filesToUpload.splice(this.filesToUpload.indexOf(file), 1);
       }
 
       /**
