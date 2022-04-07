@@ -3,7 +3,8 @@ import SumOfNumbers from './requests/sumOfNumbers';
 import AuthorizeResponse from './responses/authorize';
 import SumOfNumbersResponse from './responses/sumOfNumbers';
 import SendWord from './outgoing/sendWord';
-import {FileRequest} from "../../types/file";
+import FileRequest from './requests/file_request';
+import FileRequestResponse from "./responses/file_request";
 
 /**
  * The type described all available outgoing messages that can be sent by API
@@ -16,7 +17,7 @@ export type ApiUpdate =
  */
 export type ApiRequest =
   | Authorize
-  | SumOfNumbers;
+  | SumOfNumbers
 
 export type ApiFileRequest =
   | FileRequest
@@ -25,4 +26,5 @@ export type ApiFileRequest =
  */
 export type ApiResponse =
   | AuthorizeResponse
-  | SumOfNumbersResponse;
+  | SumOfNumbersResponse
+  | FileRequestResponse

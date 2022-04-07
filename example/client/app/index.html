@@ -3,3 +3,38 @@
 </title>
 <script type="module" src="client.ts"></script>
 Open the Console to check Client's work.
+<input type="file" id="file">
+<button id="upload">Upload</button>
+<script type="module">
+  import {my_function} from "./send-file";
+  const f = (file, fileName) => {
+    my_function(file, fileName);
+  }
+  console.log(__dirname, "html");
+
+  function arrayBufferToBufferCycle(ab) {
+    let buffer = new Buffer(ab.byteLength);
+    let view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
+      buffer[i] = view[i];
+    }
+    return buffer;
+  }
+
+
+    const file = document.getElementById('file');
+    const upload = document.getElementById('upload');
+
+    upload.addEventListener('click', () => {
+
+    const fileReader = new FileReader();
+    fileReader.readAsArrayBuffer(file.files[0]);
+
+
+    fileReader.onload = (event) => {
+      let d = event.target.result;
+      let buf = arrayBufferToBufferCycle(d)
+      f(buf, file.files[0].name);
+  }
+  });
+</script>

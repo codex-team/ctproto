@@ -1,4 +1,4 @@
-import { CTProtoClient } from '../../../src';
+import { CTProtoClient } from '../../../build/src';
 // import { CTProtoClient } from 'ctproto';
 import { authorizeRequestPayloadMock } from '../../mocks/authorizeRequestPayload';
 import { ApiRequest, ApiResponse, ApiUpdate } from '../../types';
@@ -27,3 +27,4 @@ client.send('sum-of-numbers', {
   .then((responsePayload) => {
     console.log('Response for "sum-of-numbers": ', responsePayload);
   });
+

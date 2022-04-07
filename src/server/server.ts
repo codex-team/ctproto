@@ -7,8 +7,9 @@ import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
-import { FileRequest, UploadedFile } from '../../types/file';
+import { UploadedFile } from '../../types/file';
 import { Buffer } from 'buffer';
+import { ApiFileRequest } from '../../example/types';
 
 /**
  * Available options for the CTProtoServer
@@ -53,7 +54,7 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
    * @param message - full message data
    * @returns optionally can return any data to respond to client
    */
-  onMessage: (message: ApiRequest | FileRequest) => Promise<void | ApiResponse['payload']>;
+  onMessage: (message: ApiRequest | ApiFileRequest) => Promise<void | ApiResponse['payload']>;
 
   /**
    * Allows to disable validation/authorization and other warning messages
@@ -99,7 +100,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   /**
    * Configuration options passed on Transport initialization
    */
-  private options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse>;
+  private readonly options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse>;
 
   /**
    * Constructor
@@ -166,20 +167,20 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
 
-    this.parseIfString(data, socket);
+    await this.parseIfString(data, socket);
 
     const client = this.clients.find((c) => c.socket === socket).current();
 
     try {
       if (client === undefined) {
         const message = JSON.parse(data as string);
-        this.handleFirstMessage(socket, message);
+        await this.handleFirstMessage(socket, message);
       } else {
         if (data instanceof Buffer){
-          this.handleBufferMessage(client, data)
+          await this.handleBufferMessage(client, data)
         } else {
           const message = JSON.parse(data as string);
-          this.handleAuthorizedMessage(client, message);
+          await this.handleAuthorizedMessage(client, message);
         }
       }
     } catch (error) {
@@ -315,12 +316,21 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Create new file to upload or add some data
        */
       if (file) {
+
+        /**
+         * Push payload file data if object file already created
+         */
         file.file[0] = data;
         file.chunks = payload.chunks;
         file.type = payload.type;
         file.payload = payload.payload;
       } else {
+
+        /**
+         * Create new file object
+         */
         this.uploadedFiles.push( {id: fileId, file: [data], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
+        file = this.uploadedFiles.find((req) => req.id === fileId);
       }
     } else {
       if (file) {
@@ -339,13 +349,28 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         file!.file[chunkNumber] = data;
       }
     }
+
     if (file?.chunks) {
+
+      /**
+       * Calculate percent of uploading
+       */
       const percent = file.file.filter(Boolean).length/file.chunks * 100;
 
+
+      /**
+       * Respond uploading info
+       */
       client.respond(payload.id, { percent: Math.floor(percent)+'%', type: file?.type, fileId: fileId });
 
+      /**
+       * Check and parse if file is fully uploaded
+       */
       const response = await this.parseFileDataIfReady(file);
 
+      /**
+       * Respond if file fully uploaded
+       */
       if (response) {
         client.respond(file.id, response)
       }
@@ -358,18 +383,28 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param file - uploading file
    */
   private async parseFileDataIfReady(file: UploadedFile): Promise <void | ApiResponse['payload']> {
+
+    /**
+     * Check is file fully uploaded
+     */
     if (file.file.filter(Boolean).length/file.chunks! == 1){
       let fileData = Buffer.alloc(0);
 
+      /**
+       * Uniting of incoming file chunks
+       */
       for (let chunk of file.file) {
         fileData = Buffer.concat([fileData, chunk]);
       }
 
+      /**
+       * Make an file request object
+       */
       const parsedFile = {
         type: file.type!,
         payload: file.payload,
         file: fileData,
-      }
+      } as ApiFileRequest
 
       return await this.options.onMessage(parsedFile);
     } else {

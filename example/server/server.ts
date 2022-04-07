@@ -1,9 +1,10 @@
-import { CTProtoServer } from '../../src';
+import { CTProtoServer } from '../../build/src';
 import {ApiFileRequest, ApiRequest, ApiResponse, ApiUpdate} from '../types';
 import { SumOfNumbersMessagePayload } from '../types/requests/sumOfNumbers';
 import { authTokenMock } from '../mocks/authorizeRequestPayload';
 import { AuthorizeMessagePayload } from '../types/requests/authorize';
 import { AuthorizeResponsePayload } from '../types/responses/authorize';
+import * as fs from 'fs';
 
 /**
  * The example of some API method
@@ -37,6 +38,12 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
         return {
           sum: sumNumbers(message.payload),
         };
+      }
+      if (message.type == 'file-request') {
+        fs.writeFileSync('./files/'+message.payload.fileName, message.file);
+        return {
+          path: fs.realpathSync('./files/')+message.payload.fileName,
+        }
       }
     },
   });

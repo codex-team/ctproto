@@ -1,5 +1,5 @@
 import MessageFactory from '../messageFactory';
-import { Message, NewMessage, ResponseMessage } from '../../types';
+import { NewMessage, ResponseMessage } from '../../types';
 
 /**
  * Available options for the CTProtoClient
@@ -157,7 +157,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * Limit for chunk size
    */
-  private readonly bufferLimit = 50;
+  private readonly bufferLimit = 10000;
 
   /**
    * Reconnection tries Timeout
@@ -232,7 +232,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
            * Added new file to upload
            */
           this.filesToUpload.push({ id: fileId,
-            chunks: [chunk]});
+            chunks: [chunk], cb: callback});
           this.sendChunk(chunk, i, message, fileId);
         } else {
           const message = JSON.stringify({ id: MessageFactory.createMessageId() });

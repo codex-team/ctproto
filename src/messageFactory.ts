@@ -1,4 +1,4 @@
-import { NewMessage, ResponseMessage } from './../types';
+import { NewMessage, ResponseMessage } from '../types';
 import { nanoid } from 'nanoid';
 
 /**
