@@ -4,7 +4,7 @@ import AuthorizeResponse from './responses/authorize';
 import SumOfNumbersResponse from './responses/sumOfNumbers';
 import SendWord from './outgoing/sendWord';
 import FileRequest from './requests/file_request';
-import FileRequestResponse from "./responses/file_request";
+import FileRequestResponse from './responses/file_request';
 
 /**
  * The type described all available outgoing messages that can be sent by API

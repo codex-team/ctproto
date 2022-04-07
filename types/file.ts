@@ -1,4 +1,4 @@
-import { Buffer } from "buffer";
+import { Buffer } from 'buffer';
 
 /**
  * Data for files to upload
