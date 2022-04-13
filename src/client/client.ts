@@ -250,7 +250,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
 
   /**
-   * This method sends one chunk
+   * This method sends one chunk of the uploading file
    *
    * @param chunk - chunk with chunk data
    * @param chunkNumber - number of the chunk
@@ -429,6 +429,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const messageId = message.messageId;
 
       const payload = message.payload;
+
       if ('fileId' in payload) {
         console.log('CTProto 💖 File', message.payload.fileId, 'uploaded on', message.payload.percent);
       } else if ('type' in message) {

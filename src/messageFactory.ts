@@ -51,8 +51,9 @@ export default class MessageFactory {
    * @param bufData - buffer of file and meta data
    * @param message - message to send with chunk
    */
-  public static createBufferMessage(fileId: string, bufData: Buffer, message: string): Buffer {
+  public static packFile(fileId: string, bufData: Buffer, message: string): Buffer {
     const bufMessage = Buffer.from(message);
+
     return Buffer.concat( [Buffer.from(fileId), bufData, bufMessage] );
   }
 

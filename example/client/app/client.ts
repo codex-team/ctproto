@@ -27,4 +27,3 @@ client.send('sum-of-numbers', {
   .then((responsePayload) => {
     console.log('Response for "sum-of-numbers": ', responsePayload);
   });
-
