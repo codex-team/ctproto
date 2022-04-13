@@ -150,7 +150,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private enqueuedBufferMessages: Array<Buffer> = [];
 
   /**
-   * Uploading files
+   * Files which are uploading now
    */
   private filesToUpload: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
 
