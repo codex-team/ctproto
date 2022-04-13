@@ -14,9 +14,9 @@ And you can test file uploading.
 <button id="upload">Upload</button>
 
 <script type="module">
-  import { my_function } from './send-file';
+  import { sendFileFromByForm } from './send-file';
   const f = (file, fileName) => {
-    my_function(file, fileName);
+    sendFileFromByForm(file, fileName);
   }
 
   function arrayBufferToBufferCycle(ab) {
