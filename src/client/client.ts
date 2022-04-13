@@ -436,7 +436,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const payload = message.payload;
       if ('fileId' in payload) {
-        console.log('CTProto 💖 File', message.payload.fileId, 'uploaded on', message.payload.percent);
+        this.log('CTProto 💖 File ' + message.payload.fileId + ' uploaded on ' + message.payload.percent);
       } else if ('type' in message) {
         this.options.onMessage(message);
       }
