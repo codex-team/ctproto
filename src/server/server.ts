@@ -131,7 +131,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       const msgWaitingTime = 3000;
 
       /**
-       * Set type of incoming binary data to Buffer
+       * Set type of incoming binary data to Buffer, because client uses buffer type of binary data
        */
       socket.binaryType = 'nodebuffer';
 
