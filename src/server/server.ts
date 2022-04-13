@@ -275,7 +275,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   }
 
   /**
-   * Process not-first buffer message.
+   * Process buffer message.
    *
    * @param client - connected client
    * @param message - accepted message
