@@ -289,14 +289,14 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const sizeOffset = 14;
 
     const fileId = message.slice(0,fileIdSlice).toString();
-    const chunkNumber = (message.readInt32BE(chunkNumberOffset));
-    const size = (message.readInt32BE(sizeOffset));
+    const chunkNumber = message.readInt32BE(chunkNumberOffset);
+    const size = message.readInt32BE(sizeOffset);
 
     /**
      * Getting file data
      */
     const dataSlice = 18;
-    let data = message.slice(dataSlice, dataSlice+size);
+    let fileChunk = message.slice(dataSlice, dataSlice+size);
 
     /**
      * Parsing payload message in buffer message
@@ -320,7 +320,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         /**
          * Push payload file data if object file already created
          */
-        file.file[0] = data;
+        file.file[0] = fileChunk;
         file.chunks = payload.chunks;
         file.type = payload.type;
         file.payload = payload.payload;
@@ -329,7 +329,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         /**
          * Create new file object
          */
-        this.uploadingFiles.push( {id: fileId, file: [data], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
+        this.uploadingFiles.push( {id: fileId, file: [fileChunk], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
         file = this.uploadingFiles.find((req) => req.id === fileId);
       }
     } else {
@@ -338,7 +338,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         /**
          * Push file data
          */
-        file.file.push(data);
+        file.file.push(fileChunk);
       } else {
 
         /**
@@ -346,7 +346,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
          */
         this.uploadingFiles.push({ id: fileId, file: [] });
         let file = this.uploadingFiles.find((req) => req.id === fileId);
-        file!.file[chunkNumber] = data;
+        file!.file[chunkNumber] = fileChunk;
       }
     }
 
