@@ -31,6 +31,20 @@ export default class MessageFactory {
    *
    * @template MessagePayload - the type describing structure of the message payload
    *
+   * @param [payload] - additional data to send
+   */
+  public static createBufferMessage<MessagePayload>(payload?: MessagePayload): string {
+    return JSON.stringify({
+      payload,
+      messageId: MessageFactory.createMessageId()
+    })
+  }
+
+  /**
+   * Creates the message for chunk
+   *
+   * @template MessagePayload - the type describing structure of the message payload
+   *
    * @param type - request type
    * @param payload - message for chunk
    * @param chunks - number of chunks
@@ -45,13 +59,13 @@ export default class MessageFactory {
   }
 
   /**
-   * Creates the buffer message
+   * Creates the buffer chunk
    *
    * @param fileId - file id
    * @param bufData - buffer of file and meta data
    * @param message - message to send with chunk
    */
-  public static createBufferMessage(fileId: string, bufData: Buffer, message: string): Buffer {
+  public static createChunk(fileId: string, bufData: Buffer, message: string): Buffer {
     const bufMessage = Buffer.from(message);
     return Buffer.concat( [Buffer.from(fileId), bufData, bufMessage] );
   }
