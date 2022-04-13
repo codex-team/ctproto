@@ -68,7 +68,9 @@ export default class MessageFactory {
   public static packFile(fileId: string, bufData: Buffer, message: string): Buffer {
     const bufMessage = Buffer.from(message);
 
-    return Buffer.concat( [Buffer.from(fileId), bufData, bufMessage] );
+    const bufFileId = Buffer.from(fileId)
+
+    return Buffer.concat( [bufFileId, bufData, bufMessage] );
   }
 
   /**
