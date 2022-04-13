@@ -275,10 +275,11 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Create meta data for chunk
        */
-      const metaChunkNumber = Buffer.alloc(4);
+      const sizeForMeta = 4;
+      const metaChunkNumber = Buffer.alloc(sizeForMeta);
       metaChunkNumber.writeInt32BE(chunkNumber!);
 
-      const metaSize = Buffer.alloc(4);
+      const metaSize = Buffer.alloc(sizeForMeta);
       metaSize.writeInt32BE(chunk.length);
 
       /**
