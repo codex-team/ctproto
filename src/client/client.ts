@@ -224,18 +224,20 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       for (let i = 0; i<chunks; i++) {
 
         const uploadingFile = this.filesToUpload.find((req) => req.id === fileId);
-        const chunk = file.slice(i*this.bufferLimit, this.bufferLimit + this.bufferLimit*i);
+        const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
         if (i == 0) {
           const message = MessageFactory.createForUpload(type, payload, chunks);
 
           /**
-           * Added new file to upload
+           * Creates new instance of the uploading file to save file info in case of lost chunks
            */
           this.filesToUpload.push({ id: fileId,
-            chunks: [chunk], cb: callback});
+            chunks: [chunk],
+            cb: callback
+          });
           this.sendChunk(chunk, i, message, fileId);
         } else {
-          const message = JSON.stringify({ id: MessageFactory.createFileId() });
+          const message = MessageFactory.createBufferMessage()
 
           /**
            * Push chunk to uploading files
@@ -283,7 +285,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Unite meta with file data
        */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
-      const bufferMessage = MessageFactory.createBufferMessage(fileId!, data, message!);
+      const bufferMessage = MessageFactory.createChunk(fileId!, data, message!);
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
         this.enqueuedBufferMessages.push(bufferMessage);
       } else {
