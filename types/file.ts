@@ -3,7 +3,7 @@ import { Buffer } from 'buffer';
 /**
  * Data for files to upload
  */
-export interface UploadedFile {
+export interface UploadingFile {
   /**
    * File id
    */

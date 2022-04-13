@@ -7,7 +7,7 @@ import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
-import { UploadedFile } from '../../types/file';
+import { UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
 import { ApiFileRequest } from '../../example/types';
 
@@ -95,7 +95,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   /**
    * Files which are uploading to the server at this time
    */
-  private uploadingFiles: Array<UploadedFile>;
+  private uploadingFiles: Array<UploadingFile>;
 
   /**
    * Configuration options passed on Transport initialization
@@ -394,7 +394,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param file - uploading file
    * @param uploadedChunks - number of uploaded chunks of file
    */
-  private async checkFileFullness(file: UploadedFile, uploadedChunks: number): Promise <void | ApiResponse['payload']> {
+  private async checkFileFullness(file: UploadingFile, uploadedChunks: number): Promise <void | ApiResponse['payload']> {
 
     /**
      * Check is file fully uploaded
