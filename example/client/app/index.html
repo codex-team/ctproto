@@ -15,10 +15,18 @@ And you can test file uploading.
 
 <script type="module">
   import { sendFileFromByForm } from './send-file';
-  const f = (file, fileName) => {
+
+  const sendFile = (file, fileName) => {
     sendFileFromByForm(file, fileName);
   }
 
+  /**
+   * Convert data from arrayBuffer to Buffer
+   *
+   * @param ab - arrayBuffer data
+   *
+   * @return {Buffer} Converted Buffer data
+   */
   function arrayBufferToBufferCycle(ab) {
     let buffer = new Buffer(ab.byteLength);
     let view = new Uint8Array(ab);
@@ -28,10 +36,15 @@ And you can test file uploading.
     return buffer;
   }
 
-
+    /**
+     * Get elements for uploading files
+     */
     const file = document.getElementById('file');
     const upload = document.getElementById('upload');
 
+    /**
+     * Creat onClick event for file uploading
+     */
     upload.addEventListener('click', () => {
 
     const fileReader = new FileReader();
@@ -41,7 +54,7 @@ And you can test file uploading.
     fileReader.onload = (event) => {
       let d = event.target.result;
       let buf = arrayBufferToBufferCycle(d)
-      f(buf, file.files[0].name);
+      sendFile(buf, file.files[0].name);
   }
   });
 </script>
