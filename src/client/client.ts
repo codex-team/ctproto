@@ -252,7 +252,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
 
   /**
-   * This method sends one chunk
+   * This method sends one chunk of the uploading file
    *
    * @param chunk - chunk with chunk data
    * @param chunkNumber - number of the chunk
@@ -284,7 +284,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Unite meta with file data
        */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
-      bufferMessage = MessageFactory.createChunk(fileId!, data, message!);
+      bufferMessage = MessageFactory.packFile(fileId!, data, message!);
       }
     if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
       this.enqueuedBufferMessages.push(bufferMessage);
@@ -435,6 +435,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const messageId = message.messageId;
 
       const payload = message.payload;
+
       if ('fileId' in payload) {
         this.log('CTProto 💖 File ' + message.payload.fileId + ' uploaded on ' + message.payload.percent);
       } else if ('type' in message) {

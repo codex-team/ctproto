@@ -95,7 +95,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   /**
    * Files which are uploading to the server at this time
    */
-  private uploadedFiles: Array<UploadedFile>;
+  private uploadingFiles: Array<UploadedFile>;
 
   /**
    * Configuration options passed on Transport initialization
@@ -310,7 +310,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Meta data of the first chunk includes additional information
      */
-    if ( chunkNumber == 0 ) {
+    if ( chunkNumber === 0 ) {
 
       /**
        * Create new file to upload or add some data
@@ -387,7 +387,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Check is file fully uploaded
      */
-    if (file.file.filter(Boolean).length/file.chunks! == 1){
+    if (file.file.filter(Boolean).length / file.chunks! === 1){
       let fileData = Buffer.alloc(0);
 
       /**
