@@ -91,7 +91,14 @@ export default class MessageFactory {
   /**
    * Creates unique message id
    */
-  public static createMessageId(): string {
+  private static createMessageId(): string {
+    return nanoid(idLength);
+  }
+
+  /**
+   * Creates unique file id
+   */
+  public static createFileId(): string {
     return nanoid(idLength);
   }
 }

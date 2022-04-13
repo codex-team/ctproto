@@ -209,7 +209,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         };
       }
 
-      const fileId = MessageFactory.createMessageId();
+      const fileId = MessageFactory.createFileId();
 
       /**
        * Calculate number of chunks
@@ -235,7 +235,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
             chunks: [chunk], cb: callback});
           this.sendChunk(chunk, i, message, fileId);
         } else {
-          const message = JSON.stringify({ id: MessageFactory.createMessageId() });
+          const message = JSON.stringify({ id: MessageFactory.createFileId() });
 
           /**
            * Push chunk to uploading files
