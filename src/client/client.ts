@@ -402,12 +402,18 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
             this.options.onAuth(responsePayload as AuthResponsePayload);
 
-            if (this.enqueuedMessages.length > 0 || this.enqueuedBufferMessages.length > 0) {
+            if (this.enqueuedMessages.length > 0) {
               const len = this.enqueuedMessages.length;
 
               this.log(`There ${len === 1 ? 'is a message' : 'are ' + len + ' messages'} in queue:`, this.enqueuedMessages.map(m => m.type));
 
               this.sendEnqueuedMessages();
+            }
+
+            if (this.enqueuedBufferMessages.length > 0) {
+              const len = this.enqueuedBufferMessages.length;
+
+              this.log(`There ${len === 1 ? 'is a message' : 'are ' + len + ' buffer messages'} in queue`);
 
               this.sendEnqueuedBufferMessages();
             }
