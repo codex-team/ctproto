@@ -329,7 +329,12 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         /**
          * Create new file object
          */
-        this.uploadingFiles.push( {id: fileId, file: [fileChunk], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
+        this.uploadingFiles.push( {id: fileId,
+          file: [fileChunk],
+          chunks: payload.chunks,
+          payload: payload.payload,
+          type: payload.type
+        } );
         file = this.uploadingFiles.find((req) => req.id === fileId);
       }
     } else {
@@ -350,23 +355,29 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       }
     }
 
+    /**
+     * Check if chunks in uploading file objects consists, and then check fullness
+     */
     if (file?.chunks) {
 
       /**
        * Calculate percent of uploading
        */
-      const percent = file.file.filter(Boolean).length/file.chunks * 100;
+      const uploadedChunks = file.file.filter(Boolean).length;
 
 
       /**
        * Respond uploading info
        */
-      client.respond(payload.id, { percent: Math.floor(percent)+'%', type: file?.type, fileId: fileId });
+      client.respond(payload.id, { uploadedChunks: uploadedChunks,
+        type: file?.type,
+        fileId: fileId
+      });
 
       /**
        * Check and parse if file is fully uploaded
        */
-      const response = await this.parseFileDataIfReady(file);
+      const response = await this.checkFileFullness(file, uploadedChunks);
 
       /**
        * Respond if file fully uploaded
@@ -381,13 +392,14 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * Parse and hand over to onMessage if file data is full
    *
    * @param file - uploading file
+   * @param uploadedChunks - number of uploaded chunks of file
    */
-  private async parseFileDataIfReady(file: UploadedFile): Promise <void | ApiResponse['payload']> {
+  private async checkFileFullness(file: UploadedFile, uploadedChunks: number): Promise <void | ApiResponse['payload']> {
 
     /**
      * Check is file fully uploaded
      */
-    if (file.file.filter(Boolean).length / file.chunks! === 1){
+    if (uploadedChunks / file.chunks! === 1){
       let fileData = Buffer.alloc(0);
 
       /**
@@ -401,11 +413,14 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Make an file request object
        */
       const parsedFile = {
-        type: file.type!,
+        type: file.type,
         payload: file.payload,
         file: fileData,
       } as ApiFileRequest
 
+      /**
+       * Remove file from uploading files
+       */
       this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       return await this.options.onMessage(parsedFile);
     } else {
