@@ -1,16 +1,20 @@
 <title>
   💖 CTProto Client Example
 </title>
+
 <script type="module" src="client.ts"></script>
 Open the Console to check Client's work.
 <br>
+
 <br>
 And you can test file uploading.
 <br>
+
 <input type="file" id="file">
 <button id="upload">Upload</button>
+
 <script type="module">
-  import {my_function} from "./send-file";
+  import { my_function } from './send-file';
   const f = (file, fileName) => {
     my_function(file, fileName);
   }
