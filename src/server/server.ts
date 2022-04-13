@@ -167,7 +167,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
 
-    await this.parseIfString(data, socket);
+    await this.validateTextMessage(data, socket);
 
     const client = this.clients.find((c) => c.socket === socket).current();
 
@@ -194,7 +194,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param socket - socket
    * @param data - message data
    */
-  private async parseIfString(data: any, socket: ws): Promise<void> {
+  private async validateTextMessage(data: any, socket: ws): Promise<void> {
     if (typeof data === 'string') {
       try {
         MessageValidator.validateMessage(data as string);
