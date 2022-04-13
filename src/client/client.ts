@@ -264,7 +264,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Sends enqueued messages
      */
-    if (!(chunkNumber) && !(message) && !(fileId)) {
+    if (!chunkNumber) {
       if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
         this.enqueuedBufferMessages.push(chunk);
       } else {
