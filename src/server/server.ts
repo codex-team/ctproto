@@ -114,7 +114,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      * because we will use own Map (this.ClientsList)
      */
     options.clientTracking = false;
-    this.uploadedFiles = [];
+    this.uploadingFiles = [];
     this.options = options;
     this.wsServer = WebSocketsServer || new ws.Server(this.options, () => {
       this.log(`Server is running at ws://${options.host || 'localhost'}:${options.port}`);
@@ -305,7 +305,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
 
     const payload = JSON.parse(strPayload);
 
-    let file = this.uploadedFiles.find((req) => req.id === fileId);
+    let file = this.uploadingFiles.find((req) => req.id === fileId);
 
     /**
      * Meta data of the first chunk includes additional information
@@ -329,8 +329,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         /**
          * Create new file object
          */
-        this.uploadedFiles.push( {id: fileId, file: [data], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
-        file = this.uploadedFiles.find((req) => req.id === fileId);
+        this.uploadingFiles.push( {id: fileId, file: [data], chunks: payload.chunks, payload: payload.payload, type: payload.type} );
+        file = this.uploadingFiles.find((req) => req.id === fileId);
       }
     } else {
       if (file) {
@@ -344,8 +344,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         /**
          * Create new uploading file
          */
-        this.uploadedFiles.push({ id: fileId, file: [] });
-        let file = this.uploadedFiles.find((req) => req.id === fileId);
+        this.uploadingFiles.push({ id: fileId, file: [] });
+        let file = this.uploadingFiles.find((req) => req.id === fileId);
         file!.file[chunkNumber] = data;
       }
     }
@@ -406,7 +406,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         file: fileData,
       } as ApiFileRequest
 
-      this.uploadedFiles.splice(this.uploadedFiles.indexOf(file), 1);
+      this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       return await this.options.onMessage(parsedFile);
     } else {
       return;
