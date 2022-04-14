@@ -48,12 +48,14 @@ export default class MessageFactory {
    * @param type - request type
    * @param payload - message for chunk
    * @param chunks - number of chunks
+   * @param fileSize - size of file
    */
-  public static createForUpload<MessagePayload>(type: string, payload: MessagePayload, chunks?: number): string {
+  public static createForUpload<MessagePayload>(type: string, payload: MessagePayload, chunks?: number, fileSize?: number): string {
     return JSON.stringify({
       type,
       payload,
       chunks,
+      fileSize,
       id: MessageFactory.createMessageId(),
     });
   }

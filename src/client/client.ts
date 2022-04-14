@@ -211,6 +211,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const fileId = MessageFactory.createFileId();
 
+      const fileSize = file.length;
+
       /**
        * Calculate number of chunks
        */
@@ -226,7 +228,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         const uploadingFile = this.filesToUpload.find((req) => req.id === fileId);
         const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
         if (i == 0) {
-          const message = MessageFactory.createForUpload(type, payload, chunks);
+          const message = MessageFactory.createForUpload(type, payload, chunks, fileSize);
 
           /**
            * Creates new instance of the uploading file to save file info in case of lost chunks
@@ -266,7 +268,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Sends enqueued messages
      */
-    if (!chunkNumber) {
+    if (!chunkNumber && !fileId) {
       bufferMessage = chunk;
     } else {
 
@@ -274,6 +276,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Create meta data for chunk
        */
       const sizeForMeta = 4;
+
       const metaChunkNumber = Buffer.alloc(sizeForMeta);
       metaChunkNumber.writeInt32BE(chunkNumber!);
 
@@ -437,7 +440,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const payload = message.payload;
 
       if ('fileId' in payload) {
-        this.log('CTProto 💖 File ' + message.payload.fileId + ' Chunks uploaded: ' + message.payload.uploadedChunks);
+        this.log('CTProto 💖 File ' + message.payload.fileId + ' Chunk uploaded: ' + message.payload.chunkNumber);
       } else if ('type' in message) {
         this.options.onMessage(message);
       }

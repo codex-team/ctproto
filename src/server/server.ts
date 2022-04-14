@@ -313,45 +313,34 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     if ( chunkNumber === 0 ) {
 
       /**
-       * Create new file to upload or add some data
+       * Create Buffer for file data
        */
-      if (file) {
+      const fileData = Buffer.alloc(payload.fileSize, 0);
+      fileChunk.copy(fileData, 0);
 
-        /**
-         * Push payload file data if object file already created
-         */
-        file.file[0] = fileChunk;
-        file.chunks = payload.chunks;
-        file.type = payload.type;
-        file.payload = payload.payload;
+      /**
+       * Create new file object
+       */
+      this.uploadingFiles.push( {id: fileId,
+        uploadedChunks: 1,
+        file: fileData,
+        chunks: payload.chunks,
+        payload: payload.payload,
+        type: payload.type,
+        bufferLimit: size,
+        } );
+
+      file = this.uploadingFiles.find((req) => req.id === fileId);
       } else {
 
-        /**
-         * Create new file object
-         */
-        this.uploadingFiles.push( {id: fileId,
-          file: [fileChunk],
-          chunks: payload.chunks,
-          payload: payload.payload,
-          type: payload.type
-        } );
-        file = this.uploadingFiles.find((req) => req.id === fileId);
-      }
-    } else {
       if (file) {
 
         /**
          * Push file data
          */
-        file.file.push(fileChunk);
-      } else {
+        fileChunk.copy(file.file, file.bufferLimit * chunkNumber);
 
-        /**
-         * Create new uploading file
-         */
-        this.uploadingFiles.push({ id: fileId, file: [] });
-        let file = this.uploadingFiles.find((req) => req.id === fileId);
-        file!.file[chunkNumber] = fileChunk;
+        file.uploadedChunks = file.uploadedChunks + 1;
       }
     }
 
@@ -361,15 +350,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     if (file?.chunks) {
 
       /**
-       * Calculate percent of uploading
-       */
-      const uploadedChunks = file.file.filter(Boolean).length;
-
-
-      /**
        * Respond uploading info
        */
-      client.respond(payload.id, { uploadedChunks: uploadedChunks,
+      client.respond(payload.id, { chunkNumber: chunkNumber,
         type: file?.type,
         fileId: fileId
       });
@@ -377,7 +360,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Check and parse if file is fully uploaded
        */
-      const response = await this.checkFileFullness(file, uploadedChunks);
+      const response = await this.checkFileFullness(file);
 
       /**
        * Respond if file fully uploaded
@@ -392,22 +375,13 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * Parse and hand over to onMessage if file data is full
    *
    * @param file - uploading file
-   * @param uploadedChunks - number of uploaded chunks of file
    */
-  private async checkFileFullness(file: UploadingFile, uploadedChunks: number): Promise <void | ApiResponse['payload']> {
+  private async checkFileFullness(file: UploadingFile): Promise <void | ApiResponse['payload']> {
 
     /**
      * Check is file fully uploaded
      */
-    if (uploadedChunks / file.chunks! === 1){
-      let fileData = Buffer.alloc(0);
-
-      /**
-       * Uniting of incoming file chunks
-       */
-      for (let chunk of file.file) {
-        fileData = Buffer.concat([fileData, chunk]);
-      }
+    if (file.chunks === file.uploadedChunks){
 
       /**
        * Make an file request object
@@ -415,7 +389,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       const parsedFile = {
         type: file.type,
         payload: file.payload,
-        file: fileData,
+        file: file.file,
       } as ApiFileRequest
 
       /**

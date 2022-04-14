@@ -22,12 +22,22 @@ export interface UploadingFile {
   /**
    * Array of file chunks
    */
-  file: Array<Buffer>,
+  file: Buffer,
 
   /**
    * Number of file chunks
    */
   chunks?: number
+
+  /**
+   * Number of uploaded file chunks
+   */
+  uploadedChunks: number
+
+  /**
+   * Buffer limit on the client side
+   */
+  bufferLimit: number
 }
 
 /**
