@@ -36,8 +36,8 @@ export default class MessageFactory {
   public static createBufferMessage<MessagePayload>(payload?: MessagePayload): string {
     return JSON.stringify({
       payload,
-      messageId: MessageFactory.createMessageId()
-    })
+      messageId: MessageFactory.createMessageId(),
+    });
   }
 
   /**
@@ -70,7 +70,7 @@ export default class MessageFactory {
   public static packFile(fileId: string, bufData: Buffer, message: string): Buffer {
     const bufMessage = Buffer.from(message);
 
-    const bufFileId = Buffer.from(fileId)
+    const bufFileId = Buffer.from(fileId);
 
     return Buffer.concat( [bufFileId, bufData, bufMessage] );
   }
@@ -108,16 +108,16 @@ export default class MessageFactory {
   }
 
   /**
-   * Creates unique message id
+   * Creates unique file id
    */
-  private static createMessageId(): string {
+  public static createFileId(): string {
     return nanoid(idLength);
   }
 
   /**
-   * Creates unique file id
+   * Creates unique message id
    */
-  public static createFileId(): string {
+  private static createMessageId(): string {
     return nanoid(idLength);
   }
 }
