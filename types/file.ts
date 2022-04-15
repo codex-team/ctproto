@@ -53,7 +53,7 @@ export interface FileRequest {
   /**
    * Some client additional info
    */
-  payload: any,
+  payload: unknown,
 
   /**
    * File data
