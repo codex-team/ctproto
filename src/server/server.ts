@@ -22,18 +22,21 @@ import { ApiFileRequest } from '../../example/types';
 export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>> extends ws.ServerOptions{
   /**
    * Allows overriding server host
+   *
    * @example '0.0.0.0'
    */
   host?: string;
 
   /**
    * Allows overriding server port
+   *
    * @example 8080
    */
   port?: number;
 
   /**
    * Allows overriding connection endpoint
+   *
    * @example '/api'
    */
   path?: string;
@@ -166,7 +169,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param data - message data
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
-
     await this.validateTextMessage(data, socket);
 
     const client = this.clients.find((c) => c.socket === socket).current();
@@ -174,12 +176,14 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     try {
       if (client === undefined) {
         const message = JSON.parse(data as string);
+
         await this.handleFirstMessage(socket, message);
       } else {
-        if (data instanceof Buffer){
-          await this.handleBufferMessage(client, data)
+        if (data instanceof Buffer) {
+          await this.handleBufferMessage(client, data);
         } else {
           const message = JSON.parse(data as string);
+
           await this.handleAuthorizedMessage(client, message);
         }
       }
@@ -191,10 +195,10 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   /**
    * Method for string message
    *
-   * @param socket - socket
    * @param data - message data
+   * @param socket - socket
    */
-  private async validateTextMessage(data: any, socket: ws): Promise<void> {
+  private async validateTextMessage(data: unknown, socket: ws): Promise<void> {
     if (typeof data === 'string') {
       try {
         MessageValidator.validateMessage(data as string);
@@ -288,7 +292,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const chunkNumberOffset = 10;
     const sizeOffset = 14;
 
-    const fileId = message.slice(0,fileIdSlice).toString();
+    const fileId = message.slice(0, fileIdSlice).toString();
     const chunkNumber = message.readInt32BE(chunkNumberOffset);
     const size = message.readInt32BE(sizeOffset);
 
@@ -296,12 +300,12 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      * Getting file data
      */
     const dataSlice = 18;
-    let fileChunk = message.slice(dataSlice, dataSlice+size);
+    const fileChunk = message.slice(dataSlice, dataSlice+size);
 
     /**
      * Parsing payload message in buffer message
      */
-    let strPayload = message.slice(dataSlice + size).toString();
+    const strPayload = message.slice(dataSlice + size).toString();
 
     const payload = JSON.parse(strPayload);
 
@@ -311,30 +315,28 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      * Meta data of the first chunk includes additional information
      */
     if ( chunkNumber === 0 ) {
-
       /**
        * Create Buffer for file data
        */
       const fileData = Buffer.alloc(payload.fileSize, 0);
+
       fileChunk.copy(fileData, 0);
 
       /**
        * Create new file object
        */
-      this.uploadingFiles.push( {id: fileId,
+      this.uploadingFiles.push( { id: fileId,
         uploadedChunks: 1,
         file: fileData,
         chunks: payload.chunks,
         payload: payload.payload,
         type: payload.type,
         bufferLimit: size,
-        } );
+      } );
 
       file = this.uploadingFiles.find((req) => req.id === fileId);
-      } else {
-
+    } else {
       if (file) {
-
         /**
          * Push file data
          */
@@ -348,13 +350,12 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      * Check if chunks in uploading file objects consists, and then check fullness
      */
     if (file?.chunks) {
-
       /**
        * Respond uploading info
        */
       client.respond(payload.id, { chunkNumber: chunkNumber,
         type: file?.type,
-        fileId: fileId
+        fileId: fileId,
       });
 
       /**
@@ -366,7 +367,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Respond if file fully uploaded
        */
       if (response) {
-        client.respond(file.id, response)
+        client.respond(file.id, response);
       }
     }
   }
@@ -377,12 +378,10 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param file - uploading file
    */
   private async checkFileFullness(file: UploadingFile): Promise <void | ApiResponse['payload']> {
-
     /**
      * Check is file fully uploaded
      */
-    if (file.chunks === file.uploadedChunks){
-
+    if (file.chunks === file.uploadedChunks) {
       /**
        * Make an file request object
        */
@@ -390,12 +389,13 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         type: file.type,
         payload: file.payload,
         file: file.file,
-      } as ApiFileRequest
+      } as ApiFileRequest;
 
       /**
        * Remove file from uploading files
        */
       this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
+
       return await this.options.onMessage(parsedFile);
     } else {
       return;
