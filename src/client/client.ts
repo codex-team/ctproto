@@ -198,7 +198,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     type: ApiRequest['type'],
     file: Buffer,
     payload: ApiRequest['payload'],
-    callback?: RequestCallback<ApiRequest['payload']>,
+    callback?: RequestCallback<ApiRequest['payload']>
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
       let chunks = 1;
@@ -224,9 +224,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Cycle, which sends chunks
        */
       for (let i = 0; i<chunks; i++) {
-
         const uploadingFile = this.filesToUpload.find((req) => req.id === fileId);
         const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
+
         if (i == 0) {
           const message = MessageFactory.createForUpload(type, payload, chunks, fileSize);
 
@@ -234,22 +234,23 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
            * Creates new instance of the uploading file to save file info in case of lost chunks
            */
           this.filesToUpload.push({ id: fileId,
-            chunks: [chunk],
-            cb: callback
+            chunks: [ chunk ],
+            cb: callback,
           });
           this.sendChunk(chunk, i, message, fileId);
         } else {
-          const message = MessageFactory.createBufferMessage()
+          const message = MessageFactory.createBufferMessage();
 
           /**
            * Push chunk to uploading files
            */
-          uploadingFile!.chunks.push(chunk);
-          this.sendChunk(chunk, i, message, fileId);
+          if (uploadingFile) {
+            uploadingFile.chunks.push(chunk);
+            this.sendChunk(chunk, i, message, fileId);
+          }
         }
-
       }
-    })
+    });
   }
 
 
@@ -262,33 +263,38 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param fileId - id of sending file
    */
   public sendChunk(chunk: Buffer, chunkNumber?: number, message?: string, fileId?: string): void {
-
     let bufferMessage;
 
     /**
      * Sends enqueued messages
      */
-    if (!chunkNumber && !fileId) {
+    if (!chunkNumber) {
       bufferMessage = chunk;
     } else {
-
       /**
        * Create meta data for chunk
        */
       const sizeForMeta = 4;
 
       const metaChunkNumber = Buffer.alloc(sizeForMeta);
-      metaChunkNumber.writeInt32BE(chunkNumber!);
+
+      metaChunkNumber.writeInt32BE(chunkNumber);
 
       const metaSize = Buffer.alloc(sizeForMeta);
+
       metaSize.writeInt32BE(chunk.length);
 
       /**
        * Unite meta with file data
        */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
-      bufferMessage = MessageFactory.packFile(fileId!, data, message!);
+
+      if ( !fileId || !message ) {
+        return;
       }
+
+      bufferMessage = MessageFactory.packFile(fileId, data, message);
+    }
     if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
       this.enqueuedBufferMessages.push(bufferMessage);
     } else {
