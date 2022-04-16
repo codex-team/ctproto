@@ -268,9 +268,13 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Sends enqueued messages
      */
-    if (!chunkNumber) {
+    if (!fileId) {
       bufferMessage = chunk;
     } else {
+      if ( !message ) {
+        return;
+      }
+
       /**
        * Create meta data for chunk
        */
@@ -278,7 +282,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const metaChunkNumber = Buffer.alloc(sizeForMeta);
 
-      metaChunkNumber.writeInt32BE(chunkNumber);
+      metaChunkNumber.writeInt32BE(chunkNumber!);
 
       const metaSize = Buffer.alloc(sizeForMeta);
 
@@ -288,10 +292,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Unite meta with file data
        */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
-
-      if ( !fileId || !message ) {
-        return;
-      }
 
       bufferMessage = MessageFactory.packFile(fileId, data, message);
     }
