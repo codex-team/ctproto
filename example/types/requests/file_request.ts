@@ -21,7 +21,7 @@ export default interface FileRequestMessage extends NewMessage<FileMessagePayloa
   /**
    * File request type
    */
-  type: 'file-request';
+  type: 'upload-file';
 
   /**
    * File data
