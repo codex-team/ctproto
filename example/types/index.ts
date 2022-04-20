@@ -18,7 +18,7 @@ export type ApiUpdate =
 export type ApiRequest =
   | Authorize
   | SumOfNumbers
-  | FileRequest
+  | UploadFile
 
 export type ApiFileRequest =
   | FileRequest
