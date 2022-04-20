@@ -293,7 +293,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
 
-      bufferMessage = MessageFactory.packFile(fileId, data, message);
+      bufferMessage = MessageFactory.packChunk(fileId, data, message);
     }
     if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
       this.enqueuedBufferMessages.push(bufferMessage);
