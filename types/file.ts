@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 
 /**
- * Data for files to upload
+ * Data for uploading files
  */
 export interface UploadingFile {
   /**
@@ -20,7 +20,7 @@ export interface UploadingFile {
   payload?: unknown,
 
   /**
-   * Array of file chunks
+   * Whole file buffer
    */
   file: Buffer,
 

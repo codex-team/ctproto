@@ -446,7 +446,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const payload = message.payload;
 
       if ('fileId' in payload) {
-        this.log('CTProto 💖 File ' + message.payload.fileId + ' Chunk uploaded: ' + message.payload.chunkNumber);
+        this.log('File ' + message.payload.fileId + ' Chunk uploaded: ' + message.payload.chunkNumber);
       } else if ('type' in message) {
         this.options.onMessage(message);
       }
