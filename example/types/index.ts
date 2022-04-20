@@ -4,7 +4,7 @@ import AuthorizeResponse from './responses/authorize';
 import SumOfNumbersResponse from './responses/sumOfNumbers';
 import SendWord from './outgoing/sendWord';
 import UploadFile from './requests/file_request';
-import FileRequestResponse from './responses/file_request';
+import UploadFileResponse from './responses/file_request';
 
 /**
  * The type described all available outgoing messages that can be sent by API
@@ -28,4 +28,4 @@ export type ApiFileRequest =
 export type ApiResponse =
   | AuthorizeResponse
   | SumOfNumbersResponse
-  | FileRequestResponse
+  | UploadFileResponse
