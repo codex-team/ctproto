@@ -32,7 +32,7 @@ export interface UploadingFile {
   /**
    * Number of uploaded file chunks
    */
-  uploadedChunks: number
+  uploadedChunksCount: number
 
   /**
    * Buffer limit on the client side

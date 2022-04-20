@@ -326,7 +326,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Create new file object
        */
       this.uploadingFiles.push( { id: fileId,
-        uploadedChunks: 1,
+        uploadedChunksCount: 1,
         file: fileData,
         chunks: payload.chunks,
         payload: payload.payload,
@@ -342,7 +342,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
          */
         fileChunk.copy(file.file, file.bufferLimit * chunkNumber);
 
-        file.uploadedChunks = file.uploadedChunks + 1;
+        file.uploadedChunksCount = file.uploadedChunksCount + 1;
       }
     }
 
@@ -381,7 +381,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Check is file fully uploaded
      */
-    if (file.chunks === file.uploadedChunks) {
+    if (file.chunks === file.uploadedChunksCount) {
       /**
        * Make an file request object
        */
