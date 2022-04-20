@@ -152,7 +152,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * Files which are uploading now
    */
-  private filesToUpload: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
+  private uploadingFiles: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
 
   /**
    * Limit for chunk size
@@ -224,7 +224,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Cycle, which sends chunks
        */
       for (let i = 0; i<chunks; i++) {
-        const uploadingFile = this.filesToUpload.find((req) => req.id === fileId);
+        const uploadingFile = this.uploadingFiles.find((req) => req.id === fileId);
         const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
 
         if (i == 0) {
@@ -233,7 +233,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
           /**
            * Creates new instance of the uploading file to save file info in case of lost chunks
            */
-          this.filesToUpload.push({ id: fileId,
+          this.uploadingFiles.push({ id: fileId,
             chunks: [ chunk ],
             cb: callback,
           });
@@ -453,11 +453,11 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
 
-      const file = this.filesToUpload.find(req => req.id === messageId);
+      const file = this.uploadingFiles.find(req => req.id === messageId);
 
       if (file && typeof file.cb == 'function') {
         file.cb(message.payload);
-        this.filesToUpload.splice(this.filesToUpload.indexOf(file), 1);
+        this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       }
 
       /**
