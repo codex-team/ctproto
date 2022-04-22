@@ -3,8 +3,8 @@ import SumOfNumbers from './requests/sumOfNumbers';
 import AuthorizeResponse from './responses/authorize';
 import SumOfNumbersResponse from './responses/sumOfNumbers';
 import SendWord from './outgoing/sendWord';
-import UploadFile from './requests/file_request';
-import UploadFileResponse from './responses/file_request';
+import UploadFile from './requests/uploadFile';
+import UploadFileResponse from './responses/uploadFile';
 
 /**
  * The type described all available outgoing messages that can be sent by API
