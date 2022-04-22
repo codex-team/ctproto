@@ -14,10 +14,10 @@ And you can test file uploading.
 <button id="upload">Upload</button>
 
 <script type="module">
-  import { sendFileFromByForm } from './send-file';
+  import { uploadFile } from './send-file';
 
   const sendFile = (file, fileName) => {
-    sendFileFromByForm(file, fileName);
+    uploadFile(file, fileName);
   }
 
   /**
@@ -47,14 +47,14 @@ And you can test file uploading.
      */
     upload.addEventListener('click', () => {
 
-    const fileReader = new FileReader();
-    fileReader.readAsArrayBuffer(file.files[0]);
+      let fileReader = new FileReader();
+      fileReader.readAsArrayBuffer(file.files[0]);
 
 
-    fileReader.onload = (event) => {
-      let d = event.target.result;
-      let buf = arrayBufferToBufferCycle(d)
-      sendFile(buf, file.files[0].name);
+      fileReader.onload = (event) => {
+        let arrayBufferData = event.target.result;
+        let buf = arrayBufferToBufferCycle(arrayBufferData)
+        sendFile(buf, file.files[0].name);
   }
   });
 </script>
