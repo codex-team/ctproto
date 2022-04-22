@@ -20,7 +20,7 @@ export type ApiRequest =
   | SumOfNumbers
   | UploadFile
 
-export type ApiFileRequest =
+export type ApiUploadRequest =
   | UploadFile
 /**
  * The type described all available API response messages

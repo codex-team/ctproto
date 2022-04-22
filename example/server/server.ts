@@ -1,5 +1,5 @@
 import { CTProtoServer } from '../../build/src';
-import { ApiFileRequest, ApiRequest, ApiResponse, ApiUpdate } from '../types';
+import { ApiUploadRequest, ApiRequest, ApiResponse, ApiUpdate } from '../types';
 import { SumOfNumbersMessagePayload } from '../types/requests/sumOfNumbers';
 import { authTokenMock } from '../mocks/authorizeRequestPayload';
 import { AuthorizeMessagePayload } from '../types/requests/authorize';
@@ -33,13 +33,13 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
 
       throw new Error('Example of unsuccessful auth');
     },
-    async onMessage(message: ApiRequest | ApiFileRequest): Promise<ApiResponse['payload'] | void> {
+    async onMessage(message: ApiRequest | ApiUploadRequest): Promise<ApiResponse['payload'] | void> {
       if (message.type == 'sum-of-numbers') {
         return {
           sum: sumNumbers(message.payload),
         };
       }
-      if (message.type == 'file-request') {
+      if (message.type == 'upload-file') {
         fs.writeFileSync('./files/'+message.payload.fileName, message.file);
         return {
           path: fs.realpathSync('./files/')+message.payload.fileName,
