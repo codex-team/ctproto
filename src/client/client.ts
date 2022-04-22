@@ -83,7 +83,7 @@ interface FileToUpload<MessagePayload> {
   chunks: Array<Buffer>;
 
   /**
-   * Callback, which will called when response comes.
+   * The callback that will be called when the response will come.
    *
    * @param data - message payload
    */
@@ -150,12 +150,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private enqueuedBufferMessages: Array<Buffer> = [];
 
   /**
-   * Files which are uploading now
+   * Files which are uploading at the moment
    */
   private uploadingFiles: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
 
   /**
-   * Limit for chunk size
+   * Limit for the chunk size at bytes
    */
   private readonly bufferLimit = 10000;
 
@@ -217,17 +217,17 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Calculate number of chunks
        */
       if (file.length > this.bufferLimit) {
-        chunks = Math.ceil((file.length)/this.bufferLimit);
+        chunks = Math.ceil(file.length / this.bufferLimit);
       }
 
       /**
        * Cycle, which sends chunks
        */
-      for (let i = 0; i<chunks; i++) {
+      for (let i = 0; i < chunks; i++) {
         const uploadingFile = this.uploadingFiles.find((req) => req.id === fileId);
         const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
 
-        if (i == 0) {
+        if (i === 0) {
           const message = MessageFactory.createForUpload(type, payload, chunks, fileSize);
 
           /**
@@ -422,7 +422,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
             if (this.enqueuedBufferMessages.length > 0) {
               const len = this.enqueuedBufferMessages.length;
 
-              this.log(`There ${len === 1 ? 'is a message' : 'are ' + len + ' buffer messages'} in queue`);
+              this.log(`There ${len === 1 ? 'is a uploading file' : 'are ' + len + ' uploading files'} in queue`);
 
               this.sendEnqueuedBufferMessages();
             }

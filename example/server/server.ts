@@ -39,8 +39,8 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
           sum: sumNumbers(message.payload),
         };
       }
-      if (message.type == 'file-request') {
-        fs.writeFileSync('./files/'+message.payload.fileName, message.file);
+      if (message.type == 'upload-file') {
+        fs.writeFileSync('./files/' + message.payload.fileName, message.file);
         return {
           path: fs.realpathSync('./files/')+message.payload.fileName,
         }

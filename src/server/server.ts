@@ -288,7 +288,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Parsing meta data from buffer message
      */
-    const fileIdSlice = 10;
+    const fileIdLength = 10;
     const chunkNumberOffset = 10;
     const sizeOffset = 14;
 
@@ -353,7 +353,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Respond uploading info
        */
-      client.respond(payload.id, { chunkNumber: chunkNumber,
+      client.respond(payload.id, { 
+        chunkNumber: chunkNumber,
         type: file?.type,
         fileId: fileId,
       });
