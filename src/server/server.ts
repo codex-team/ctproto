@@ -58,6 +58,12 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
    */
   onMessage: (message: ApiRequest) => Promise<void | ApiResponse['payload']>;
 
+  /**
+   * Method for uploading messages
+   *
+   * @param uploadMessage - file message data
+   * @returns optionally can return any data to respond to client
+   */
   onUploadMessage: (uploadMessage: ApiUploadRequest) => Promise<void | ApiResponse['payload']>;
 
   /**
