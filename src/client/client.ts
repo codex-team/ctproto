@@ -111,6 +111,26 @@ interface EnqueuedMessage<ApiRequest extends NewMessage<unknown>> {
 }
 
 /**
+ * Chunk Message that is waiting for sending
+ */
+interface EnqueuedChunkMessage {
+  /**
+   * File if
+   */
+  fileId: string,
+
+  /**
+   * Chunk number
+   */
+  chunkNumber: number,
+
+  /**
+   * Chunk message
+   */
+  message: string,
+}
+
+/**
  * (￣^￣)ゞ
  *
  * Class Transport
@@ -147,7 +167,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * Buffer messages that are waiting for sending
    * (for example, when the 'send' called before the connection is established)
    */
-  private enqueuedBufferMessages: Array<Buffer> = [];
+  private enqueuedBufferMessages: Array<EnqueuedChunkMessage> = [];
 
   /**
    * Files which are uploading at the moment
@@ -260,18 +280,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param message - additional info for chunk
    * @param fileId - id of sending file
    */
-  public sendChunk(chunk: Buffer, chunkNumber?: number, message?: string, fileId?: string): void {
-    let bufferMessage;
-
-    /**
-     * Sends enqueued messages
-     */
-    if (!fileId) {
-      bufferMessage = chunk;
-    } else {
-      if ( !message ) {
-        return;
-      }
+  public sendChunk(chunk: Buffer, chunkNumber: number, message: string, fileId: string): void {
 
       /**
        * Create meta data for chunk
@@ -291,13 +300,15 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        */
       const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
 
-      bufferMessage = MessageFactory.packChunk(fileId, data, message);
-    }
-    if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
-      this.enqueuedBufferMessages.push(bufferMessage);
-    } else {
-      this.socket?.send(bufferMessage);
-    }
+      let bufferMessage = MessageFactory.packChunk(fileId, data, message);
+
+      if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+       this.enqueuedBufferMessages.push({ fileId: fileId,
+                                          chunkNumber: chunkNumber,
+                                          message: message});
+      } else {
+       this.socket?.send(bufferMessage);
+      }
   }
 
   /**
@@ -496,10 +507,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    */
   private sendEnqueuedBufferMessages(): void {
     while (this.enqueuedBufferMessages.length > 0) {
-      const messageToSend = this.enqueuedBufferMessages.shift();
+      const enqueuedChunk= this.enqueuedBufferMessages.shift();
 
-      if (messageToSend) {
-        this.sendChunk(messageToSend);
+      const file = this.getUploadingFileById(enqueuedChunk!.fileId)
+
+      if (file ) {
+        this.sendChunk(file.chunks[enqueuedChunk!.chunkNumber], enqueuedChunk!.chunkNumber, enqueuedChunk!.message, enqueuedChunk!.fileId);
       }
     }
   }
