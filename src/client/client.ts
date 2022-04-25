@@ -201,7 +201,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     callback?: RequestCallback<ApiRequest['payload']>
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
-      let chunks = 1;
 
       if (!callback) {
         callback = (response: ApiResponse['payload']) => {
@@ -216,22 +215,23 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Calculate number of chunks
        */
-      if (file.length > this.bufferLimit) {
-        chunks = Math.ceil(file.length / this.bufferLimit);
-      }
+      const chunks = Math.ceil(file.length / this.bufferLimit);
 
       /**
        * Cycle, which sends chunks
        */
       for (let i = 0; i < chunks; i++) {
-        const uploadingFile = this.uploadingFiles.find((req) => req.id === fileId);
+        const uploadingFile = this.getUploadingFileById(fileId);
         const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
 
-        if (i === 0) {
+        /**
+         * The first chunk contains client payload info and on the first chunk creates new instance in uploadingFiles
+         */
+        if (!uploadingFile) {
           const message = MessageFactory.createForUpload(type, payload, chunks, fileSize);
 
           /**
-           * Creates new instance of the uploading file to save file info in case of lost chunks
+           * Creates new instance of the uploading file to save file info in cases to handle responses and to check correct uploading
            */
           this.uploadingFiles.push({ id: fileId,
             chunks: [ chunk ],
@@ -239,15 +239,13 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
           });
           this.sendChunk(chunk, i, message, fileId);
         } else {
-          const message = MessageFactory.createBufferMessage();
+          const message = MessageFactory.createMessageForChunk();
 
           /**
            * Push chunk to uploading files
            */
-          if (uploadingFile) {
-            uploadingFile.chunks.push(chunk);
-            this.sendChunk(chunk, i, message, fileId);
-          }
+          uploadingFile!.chunks.push(chunk);
+          this.sendChunk(chunk, i, message, fileId);
         }
       }
     });
@@ -301,6 +299,15 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       this.socket?.send(bufferMessage);
     }
   }
+
+  /**
+   * This method returns file by file id
+   *
+   * @param fileId - file id of file to find
+   */
+  private getUploadingFileById(fileId: string): undefined | FileToUpload<ApiResponse> {
+    return this.uploadingFiles.find((req) => req.id === fileId);
+  };
 
   /**
    * This method sends requests

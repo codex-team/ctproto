@@ -33,7 +33,7 @@ export default class MessageFactory {
    *
    * @param [payload] - additional data to send
    */
-  public static createBufferMessage<MessagePayload>(payload?: MessagePayload): string {
+  public static createMessageForChunk<MessagePayload>(payload?: MessagePayload): string {
     return JSON.stringify({
       payload,
       messageId: MessageFactory.createMessageId(),
