@@ -9,7 +9,6 @@ import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
 import { UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
-import { ApiFileRequest } from '../../example/types';
 
 /**
  * Available options for the CTProtoServer
@@ -57,7 +56,7 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
    * @param message - full message data
    * @returns optionally can return any data to respond to client
    */
-  onMessage: (message: ApiRequest | ApiFileRequest) => Promise<void | ApiResponse['payload']>;
+  onMessage: (message: ApiRequest | UploadingFile) => Promise<void | ApiResponse['payload']>;
 
   /**
    * Allows to disable validation/authorization and other warning messages
@@ -292,7 +291,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const chunkNumberOffset = 10;
     const sizeOffset = 14;
 
-    const fileId = message.slice(0, fileIdSlice).toString();
+    const fileId = message.slice(0, fileIdLength).toString();
     const chunkNumber = message.readInt32BE(chunkNumberOffset);
     const size = message.readInt32BE(sizeOffset);
 
@@ -353,7 +352,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Respond uploading info
        */
-      client.respond(payload.id, { 
+      client.respond(payload.id, {
         chunkNumber: chunkNumber,
         type: file?.type,
         fileId: fileId,
@@ -390,7 +389,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         type: file.type,
         payload: file.payload,
         file: file.file,
-      } as ApiFileRequest;
+      } as UploadingFile;
 
       /**
        * Remove file from uploading files
