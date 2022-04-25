@@ -18,11 +18,11 @@ const sumNumbers = (numbers: SumOfNumbersMessagePayload): number => {
 /**
  * Method for creating a server instance
  */
-export function createServer(): CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate> {
+export function createServer(): CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate, ApiUploadRequest> {
   /**
    * CTProtoServer example
    */
-  const server = new CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate>({
+  const server = new CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate, ApiUploadRequest>({
     port: 8080,
     async onAuth(authRequestPayload: AuthorizeMessagePayload): Promise<AuthorizeResponsePayload> {
       if (authRequestPayload.token == authTokenMock) {
@@ -33,20 +33,23 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
 
       throw new Error('Example of unsuccessful auth');
     },
-    async onMessage(message: ApiRequest | ApiUploadRequest): Promise<ApiResponse['payload'] | void> {
+    async onMessage(message: ApiRequest): Promise<ApiResponse['payload'] | void> {
       if (message.type == 'sum-of-numbers') {
         return {
           sum: sumNumbers(message.payload),
         };
       }
-      if (message.type == 'upload-file') {
-        fs.writeFileSync('./files/' + message.payload.fileName, message.file);
-        return {
-          path: fs.realpathSync('./files/') + message.payload.fileName,
-        }
-      }
     },
-  });
+    async onUploadMessage(uploadMessage: ApiUploadRequest): Promise<ApiResponse['payload'] | void> {
+      if (uploadMessage.type == 'upload-file') {
+        fs.writeFileSync('./files/' + uploadMessage.payload.fileName, uploadMessage.file);
+        return {
+          path: fs.realpathSync('./files/') + '/' + uploadMessage.payload.fileName,
+        };
+      }
+  },
+    }
+  );
 
   return server;
 }

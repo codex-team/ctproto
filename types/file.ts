@@ -43,7 +43,7 @@ export interface UploadingFile {
 /**
  * Interface for file data which is uploaded
  */
-export interface FileRequest {
+export interface FileRequest<MessagePayload> {
 
   /**
    * Request type
@@ -53,7 +53,7 @@ export interface FileRequest {
   /**
    * Some client additional info
    */
-  payload: unknown,
+  payload: MessagePayload,
 
   /**
    * File data
