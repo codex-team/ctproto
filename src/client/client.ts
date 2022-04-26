@@ -216,11 +216,11 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   public async sendFile(
     type: ApiRequest['type'],
     file: Buffer,
-    payload: ApiRequest['payload'],
+    payload: ApiRequest['payload']
+
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
-
-      const callback = (response: ApiResponse['payload']) => {
+      const callback = (response: ApiResponse['payload']): void => {
         resolve(response);
       };
 
@@ -260,7 +260,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
           /**
            * Push chunk to uploading files
            */
-          uploadingFile!.chunks.push(chunk);
+          uploadingFile.chunks.push(chunk);
           this.sendChunk(chunk, i, message, fileId);
         }
       }
@@ -277,44 +277,36 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param fileId - id of sending file
    */
   public sendChunk(chunk: Buffer, chunkNumber: number, message: string, fileId: string): void {
+    /**
+     * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
+     */
+    const sizeForMetaData = 4;
 
-      /**
-       * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
-       */
-      const sizeForMetaData = 4;
+    const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
 
-      const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
+    bufferChunkNumber.writeInt32BE(chunkNumber);
 
-      bufferChunkNumber.writeInt32BE(chunkNumber);
+    const bufferSize = Buffer.alloc(sizeForMetaData);
 
-      const bufferSize = Buffer.alloc(sizeForMetaData);
+    bufferSize.writeInt32BE(chunk.length);
 
-      bufferSize.writeInt32BE(chunk.length);
+    /**
+     * Unite meta with file data
+     */
+    const data = Buffer.concat([bufferChunkNumber, bufferSize, chunk]);
 
-      /**
-       * Unite meta with file data
-       */
-      const data = Buffer.concat([bufferChunkNumber, bufferSize, chunk]);
+    const bufferMessage = MessageFactory.packChunk(fileId, data, message);
 
-      let bufferMessage = MessageFactory.packChunk(fileId, data, message);
-
-      if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
-       this.enqueuedBufferMessages.push({ fileId: fileId,
-                                          chunkNumber: chunkNumber,
-                                          message: message});
-      } else {
-       this.socket.send(bufferMessage);
-      }
+    if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+      this.enqueuedBufferMessages.push({
+        fileId: fileId,
+        chunkNumber: chunkNumber,
+        message: message,
+      });
+    } else {
+      this.socket.send(bufferMessage);
+    }
   }
-
-  /**
-   * This method returns file by file id
-   *
-   * @param fileId - file id of file to find
-   */
-  private getUploadingFileById(fileId: string): undefined | FileToUpload<ApiResponse> {
-    return this.uploadingFiles.find((req) => req.id === fileId);
-  };
 
   /**
    * This method sends requests
@@ -335,7 +327,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Otherwise, create the new callback
        */
       if (!callback) {
-        callback = (response: ApiResponse['payload']) => {
+        callback = (response: ApiResponse['payload']): void => {
           resolve(response);
         };
       }
@@ -369,6 +361,15 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         cb: callback,
       });
     });
+  }
+
+  /**
+   * This method returns file by file id
+   *
+   * @param fileId - file id of file to find
+   */
+  private getUploadingFileById(fileId: string): undefined | FileToUpload<ApiResponse> {
+    return this.uploadingFiles.find((req) => req.id === fileId);
   }
 
   /**
@@ -461,9 +462,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       if ('fileId' in payload) {
         const file = this.getUploadingFileById(payload.fileId);
-        console.log(payload.chunkNumber, file!.chunks.length);
+
         if (file) {
-          this.log('File ' + message.payload.fileId + ' uploaded on: ' + Math.floor(payload.chunkNumber / file.chunks.length * 100) + '%');
+          const percentMultiplier = 100;
+          const percent = Math.floor(payload.chunkNumber / file.chunks.length * percentMultiplier);
+
+          this.log('File ' + message.payload.fileId + ' uploaded on: ' + percent + '%');
         }
       } else if ('type' in message) {
         this.options.onMessage(message);
@@ -509,10 +513,14 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     while (this.enqueuedBufferMessages.length > 0) {
       const enqueuedChunk= this.enqueuedBufferMessages.shift();
 
-      const file = this.getUploadingFileById(enqueuedChunk!.fileId);
+      if ( !enqueuedChunk ) {
+        return;
+      }
+
+      const file = this.getUploadingFileById(enqueuedChunk.fileId);
 
       if (file ) {
-        this.sendChunk(file.chunks[enqueuedChunk!.chunkNumber], enqueuedChunk!.chunkNumber, enqueuedChunk!.message, enqueuedChunk!.fileId);
+        this.sendChunk(file.chunks[enqueuedChunk.chunkNumber], enqueuedChunk.chunkNumber, enqueuedChunk.message, enqueuedChunk.fileId);
       }
     }
   }

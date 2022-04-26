@@ -7,7 +7,7 @@ import { NewMessage, ResponseMessage } from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
-import {FileRequest, UploadingFile} from '../../types/file';
+import { FileRequest, UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
 
 /**
@@ -352,25 +352,29 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       file.uploadedChunksCount = file.uploadedChunksCount + 1;
     }
 
+    if ( !file ) {
+      return;
+    }
+
     /**
      * Respond uploading info
      */
     client.respond(payload.id, {
       chunkNumber: chunkNumber,
-      type: file!.type,
+      type: file.type,
       fileId: fileId,
     });
 
     /**
      * Check and parse if file is fully uploaded
      */
-    const response = await this.checkFileFullness(file!);
+    const response = await this.checkFileFullness(file);
 
     /**
      * Respond if file fully uploaded, response is undefined if file is not fully uploaded
      */
     if (response) {
-      client.respond(file!.id, response);
+      client.respond(file.id, response);
     }
   }
 
