@@ -141,7 +141,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       const msgWaitingTime = 3000;
 
       /**
-       * Set type of incoming binary data to Buffer, because client uses buffer type of binary data
+       * Set type of incoming binary data to Buffer, because default value is blob
        */
       socket.binaryType = 'nodebuffer';
 
@@ -298,6 +298,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const fileIdLength = 10;
     const chunkNumberOffset = 10;
     const sizeOffset = 14;
+    const sizeDataLength = 4;
 
     const fileId = message.slice(0, fileIdLength).toString();
     const chunkNumber = message.readInt32BE(chunkNumberOffset);
@@ -306,13 +307,13 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Getting file data
      */
-    const dataSlice = 18;
-    const fileChunk = message.slice(dataSlice, dataSlice+size);
+    const dataOffset = sizeOffset + sizeDataLength;
+    const fileChunk = message.slice(dataOffset, dataOffset + size);
 
     /**
      * Parsing payload message in buffer message
      */
-    const strPayload = message.slice(dataSlice + size).toString();
+    const strPayload = message.slice(dataOffset + size).toString();
 
     const payload = JSON.parse(strPayload);
 
@@ -321,7 +322,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Meta data of the first chunk includes additional information
      */
-    if ( chunkNumber === 0 ) {
+    if ( !file ) {
       /**
        * Create Buffer for file data
        */
@@ -343,40 +344,33 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
 
       file = this.uploadingFiles.find((req) => req.id === fileId);
     } else {
-      if (file) {
-        /**
-         * Push file data
-         */
-        fileChunk.copy(file.file, file.bufferLimit * chunkNumber);
+      /**
+       * Push file data
+       */
+      fileChunk.copy(file.file, file.bufferLimit * chunkNumber);
 
-        file.uploadedChunksCount = file.uploadedChunksCount + 1;
-      }
+      file.uploadedChunksCount = file.uploadedChunksCount + 1;
     }
 
     /**
-     * Check if chunks in uploading file objects consists, and then check fullness
+     * Respond uploading info
      */
-    if (file?.chunks) {
-      /**
-       * Respond uploading info
-       */
-      client.respond(payload.id, {
-        chunkNumber: chunkNumber,
-        type: file?.type,
-        fileId: fileId,
-      });
+    client.respond(payload.id, {
+      chunkNumber: chunkNumber,
+      type: file!.type,
+      fileId: fileId,
+    });
 
-      /**
-       * Check and parse if file is fully uploaded
-       */
-      const response = await this.checkFileFullness(file);
+    /**
+     * Check and parse if file is fully uploaded
+     */
+    const response = await this.checkFileFullness(file!);
 
-      /**
-       * Respond if file fully uploaded
-       */
-      if (response) {
-        client.respond(file.id, response);
-      }
+    /**
+     * Respond if file fully uploaded, response is undefined if file is not fully uploaded
+     */
+    if (response) {
+      client.respond(file!.id, response);
     }
   }
 
@@ -406,6 +400,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
 
       return await this.options.onUploadMessage(parsedFile);
     } else {
+      /**
+       * Returns nothing if file not fully uploaded
+       */
       return;
     }
   }
