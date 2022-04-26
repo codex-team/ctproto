@@ -244,7 +244,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
          * The first chunk contains client payload info and on the first chunk creates new instance in uploadingFiles
          */
         if (!uploadingFile) {
-          const message = MessageFactory.createForUpload(type, payload, chunks, fileSize);
+          const message = MessageFactory.createMessageForChunk(type, payload, chunks, fileSize);
 
           /**
            * Creates new instance of the uploading file to save file info in cases to handle responses and to check correct uploading
@@ -509,7 +509,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     while (this.enqueuedBufferMessages.length > 0) {
       const enqueuedChunk= this.enqueuedBufferMessages.shift();
 
-      const file = this.getUploadingFileById(enqueuedChunk!.fileId)
+      const file = this.getUploadingFileById(enqueuedChunk!.fileId);
 
       if (file ) {
         this.sendChunk(file.chunks[enqueuedChunk!.chunkNumber], enqueuedChunk!.chunkNumber, enqueuedChunk!.message, enqueuedChunk!.fileId);

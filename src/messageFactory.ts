@@ -31,32 +31,18 @@ export default class MessageFactory {
    *
    * @template MessagePayload - the type describing structure of the message payload
    *
-   * @param [payload] - additional data to send
-   */
-  public static createMessageForChunk<MessagePayload>(payload?: MessagePayload): string {
-    return JSON.stringify({
-      payload,
-      messageId: MessageFactory.createMessageId(),
-    });
-  }
-
-  /**
-   * Creates the message for chunk
-   *
-   * @template MessagePayload - the type describing structure of the message payload
-   *
    * @param type - request type
    * @param payload - message for chunk
    * @param chunks - number of chunks
    * @param fileSize - size of file
    */
-  public static createForUpload<MessagePayload>(type: string, payload: MessagePayload, chunks?: number, fileSize?: number): string {
+  public static createMessageForChunk<MessagePayload>(type?: string, payload?: MessagePayload, chunks?: number, fileSize?: number): string {
     return JSON.stringify({
       type,
       payload,
       chunks,
       fileSize,
-      id: MessageFactory.createMessageId(),
+      messageId: MessageFactory.createMessageId(),
     });
   }
 
