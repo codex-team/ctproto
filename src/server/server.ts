@@ -206,7 +206,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param socket - socket
    */
   private async validateTextMessage(data: unknown, socket: ws): Promise<void> {
-    if (typeof data === 'string') {
+    const isString = data instanceof String;
+
+    if (isString) {
       try {
         MessageValidator.validateMessage(data as string);
       } catch (error) {
