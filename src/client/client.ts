@@ -283,22 +283,22 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   public sendChunk(chunk: Buffer, chunkNumber: number, message: string, fileId: string): void {
 
       /**
-       * Create meta data for chunk
+       * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
        */
       const sizeForMeta = 4;
 
-      const metaChunkNumber = Buffer.alloc(sizeForMeta);
+      const bufferChunkNumber = Buffer.alloc(sizeForMeta);
 
-      metaChunkNumber.writeInt32BE(chunkNumber!);
+      bufferChunkNumber.writeInt32BE(chunkNumber!);
 
-      const metaSize = Buffer.alloc(sizeForMeta);
+      const bufferSize = Buffer.alloc(sizeForMeta);
 
-      metaSize.writeInt32BE(chunk.length);
+      bufferSize.writeInt32BE(chunk.length);
 
       /**
        * Unite meta with file data
        */
-      const data = Buffer.concat([metaChunkNumber, metaSize, chunk]);
+      const data = Buffer.concat([bufferChunkNumber, bufferSize, chunk]);
 
       let bufferMessage = MessageFactory.packChunk(fileId, data, message);
 
