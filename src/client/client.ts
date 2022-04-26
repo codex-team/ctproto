@@ -87,7 +87,7 @@ interface FileToUpload<MessagePayload> {
    *
    * @param data - message payload
    */
-  cb?: RequestCallback<MessagePayload>;
+  cb: RequestCallback<MessagePayload>;
 }
 
 /**
@@ -212,21 +212,17 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param type - available type of requests
    * @param file - file to send
    * @param payload - available request payload
-   * @param [callback] - already created callback in case of sending the enqueued message
    */
   public async sendFile(
     type: ApiRequest['type'],
     file: Buffer,
     payload: ApiRequest['payload'],
-    callback?: RequestCallback<ApiRequest['payload']>
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
 
-      if (!callback) {
-        callback = (response: ApiResponse['payload']) => {
-          resolve(response);
-        };
-      }
+      const callback = (response: ApiResponse['payload']) => {
+        resolve(response);
+      };
 
       const fileId = MessageFactory.createFileId();
 
@@ -285,13 +281,13 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
        */
-      const sizeForMeta = 4;
+      const sizeForMetaData = 4;
 
-      const bufferChunkNumber = Buffer.alloc(sizeForMeta);
+      const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
 
-      bufferChunkNumber.writeInt32BE(chunkNumber!);
+      bufferChunkNumber.writeInt32BE(chunkNumber);
 
-      const bufferSize = Buffer.alloc(sizeForMeta);
+      const bufferSize = Buffer.alloc(sizeForMetaData);
 
       bufferSize.writeInt32BE(chunk.length);
 
@@ -307,7 +303,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
                                           chunkNumber: chunkNumber,
                                           message: message});
       } else {
-       this.socket?.send(bufferMessage);
+       this.socket.send(bufferMessage);
       }
   }
 
@@ -464,7 +460,11 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const payload = message.payload;
 
       if ('fileId' in payload) {
-        this.log('File ' + message.payload.fileId + ' Chunk uploaded: ' + message.payload.chunkNumber);
+        const file = this.getUploadingFileById(payload.fileId);
+        console.log(payload.chunkNumber, file!.chunks.length);
+        if (file) {
+          this.log('File ' + message.payload.fileId + ' uploaded on: ' + Math.floor(payload.chunkNumber / file.chunks.length * 100) + '%');
+        }
       } else if ('type' in message) {
         this.options.onMessage(message);
       }
@@ -473,7 +473,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const file = this.uploadingFiles.find(req => req.id === messageId);
 
-      if (file && typeof file.cb == 'function') {
+      if (file) {
         file.cb(message.payload);
         this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       }
