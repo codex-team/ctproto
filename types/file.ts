@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 
 /**
- * Data for uploading files
+ * Data for uploading files, it uses to identify what file chunk is uploading and store info about file
  */
 export interface UploadingFile {
   /**
@@ -20,7 +20,7 @@ export interface UploadingFile {
   payload: unknown,
 
   /**
-   * Whole file buffer
+   * Whole file buffer, it replenishes when new chunk comes
    */
   file: Buffer,
 
@@ -35,7 +35,7 @@ export interface UploadingFile {
   uploadedChunksCount: number
 
   /**
-   * Buffer limit on the client side
+   * Buffer limit on the client side, it helps to make slice in buffer to store chunk to it
    */
   bufferLimit: number
 }
