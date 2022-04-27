@@ -359,33 +359,36 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     }
 
     /**
-     * Respond uploading info
+     * Get response for file uploading message
      */
-    client.respond(payload.id, {
-      chunkNumber: chunkNumber,
-      type: file.type,
-      fileId: fileId,
-    });
+    const response = await this.checkFileFullness(file, chunkNumber);
 
     /**
-     * Check and parse if file is fully uploaded
+     * If file not fully uploaded, response consists 'chunkNumber' parameter, and response makes by message id
      */
-    const response = await this.checkFileFullness(file);
+    if (Object.prototype.hasOwnProperty.call(response, 'chunkNumber')) {
+      client.respond(payload.id, response);
+    } else {
+      /**
+       * If file fully uploaded response makes by file id
+       */
+      client.respond(fileId, response);
+    }
 
     /**
      * Respond if file fully uploaded, response is undefined if file is not fully uploaded
      */
-    if (response) {
-      client.respond(file.id, response);
-    }
   }
 
   /**
    * Parse and hand over to onMessage if file data is full
    *
    * @param file - uploading file
+   * @param chunkNumber - number of incoming chunk
    */
-  private async checkFileFullness(file: UploadingFile): Promise <void | ApiResponse['payload']> {
+  private async checkFileFullness(file: UploadingFile, chunkNumber: number): Promise <ApiResponse['payload']> {
+    let response;
+
     /**
      * Check is file fully uploaded
      */
@@ -404,13 +407,16 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
 
-      return await this.options.onUploadMessage(parsedFile);
+      response = await this.options.onUploadMessage(parsedFile);
     } else {
-      /**
-       * Returns nothing if file not fully uploaded
-       */
-      return;
+      response = {
+        chunkNumber: chunkNumber,
+        type: file.type,
+        fileId: file.id,
+      };
     }
+
+    return response;
   }
 
   /**
