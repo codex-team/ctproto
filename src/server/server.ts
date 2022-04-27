@@ -374,10 +374,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       client.respond(fileId, response);
     }
-
-    /**
-     * Respond if file fully uploaded, response is undefined if file is not fully uploaded
-     */
   }
 
   /**
