@@ -82,10 +82,19 @@ interface FileToUpload<MessagePayload> {
    */
   chunks: Buffer;
 
+  /**
+   * What chunk is sending now
+   */
   sendingChunk: number;
 
+  /**
+   * Timeout id of resending chunks
+   */
   timeoutId?: NodeJS.Timeout;
 
+  /**
+   * Number of chunk resend
+   */
   resendTimes: number;
 
   /**
