@@ -80,7 +80,13 @@ interface FileToUpload<MessagePayload> {
   /**
    * Chunks to send
    */
-  chunks: Array<Buffer>;
+  chunks: Buffer;
+
+  sendingChunk: number;
+
+  timeoutId?: NodeJS.Timeout;
+
+  resendTimes: number;
 
   /**
    * The callback that will be called when the response will come.
@@ -234,36 +240,18 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const chunks = Math.ceil(file.length / this.bufferLimit);
 
       /**
-       * Cycle, which sends chunks
+       * Create new uploading file to save data for file uploading
        */
-      for (let i = 0; i < chunks; i++) {
-        const uploadingFile = this.getUploadingFileById(fileId);
-        const chunk = file.slice(i * this.bufferLimit, this.bufferLimit + this.bufferLimit * i);
+      this.uploadingFiles.push({ id: fileId,
+        chunks: file,
+        sendingChunk: 0,
+        cb: callback,
+        resendTimes: 0,
+      });
 
-        /**
-         * The first chunk contains client payload info and on the first chunk creates new instance in uploadingFiles
-         */
-        if (!uploadingFile) {
-          const message = MessageFactory.createMessageForChunk(type, payload, chunks, fileSize);
+      const message = MessageFactory.createMessageForChunk(type, payload, chunks, fileSize);
 
-          /**
-           * Creates new instance of the uploading file to save file info in cases to handle responses and to check correct uploading
-           */
-          this.uploadingFiles.push({ id: fileId,
-            chunks: [ chunk ],
-            cb: callback,
-          });
-          this.sendChunk(chunk, i, message, fileId);
-        } else {
-          const message = MessageFactory.createMessageForChunk();
-
-          /**
-           * Push chunk to uploading files
-           */
-          uploadingFile.chunks.push(chunk);
-          this.sendChunk(chunk, i, message, fileId);
-        }
-      }
+      this.sendChunk( message, fileId );
     });
   }
 
@@ -271,40 +259,59 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * This method sends one chunk of the uploading file
    *
-   * @param chunk - chunk with chunk data
-   * @param chunkNumber - number of the chunk
    * @param message - additional info for chunk
    * @param fileId - id of sending file
    */
-  public sendChunk(chunk: Buffer, chunkNumber: number, message: string, fileId: string): void {
+  public sendChunk(message: string, fileId: string): void {
+    const uploadingFile = this.getUploadingFileById(fileId);
+
+    if (!uploadingFile) {
+      return;
+    }
+
     /**
-     * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
+     * Getting chunk by slicing file by the chunk number and buffer limit
      */
-    const sizeForMetaData = 4;
+    const chunk = uploadingFile.chunks.slice( uploadingFile.sendingChunk * this.bufferLimit, this.bufferLimit + this.bufferLimit * uploadingFile.sendingChunk );
 
-    const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
-
-    bufferChunkNumber.writeInt32BE(chunkNumber);
-
-    const bufferSize = Buffer.alloc(sizeForMetaData);
-
-    bufferSize.writeInt32BE(chunk.length);
+    const meta = this.makeMetaData(uploadingFile.sendingChunk, chunk.length);
 
     /**
      * Unite meta with file data
      */
-    const data = Buffer.concat([bufferChunkNumber, bufferSize, chunk]);
+    const data = Buffer.concat([meta, chunk]);
+
+    /**
+     * If there is more then 5 attempts to send chunk, uploading file removes
+     */
+    if ( uploadingFile.resendTimes > this.reconnectionAttempts ) {
+      /**
+       * Remove uploading file
+       */
+      this.uploadingFiles.splice(this.uploadingFiles.indexOf(uploadingFile), 1);
+
+      return;
+    }
 
     const bufferMessage = MessageFactory.packChunk(fileId, data, message);
 
     if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
       this.enqueuedBufferMessages.push({
         fileId: fileId,
-        chunkNumber: chunkNumber,
+        chunkNumber: uploadingFile.sendingChunk,
         message: message,
       });
     } else {
       this.socket.send(bufferMessage);
+
+      /**
+       * Create timeout, which will work in case of no respond from server
+       */
+      uploadingFile.timeoutId = setTimeout( () => {
+        this.sendChunk(message, fileId);
+
+        uploadingFile.resendTimes = uploadingFile.resendTimes + 1;
+      }, this.reconnectionTimeout );
     }
   }
 
@@ -364,12 +371,71 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   }
 
   /**
+   * Handle chunk response from server
+   *
+   * @param fileId - uploading file id
+   * @param chunkNumber - file chunk number, which handled on server
+   */
+  private onChunkResponseMessage( fileId: string, chunkNumber: number ): void {
+    const uploadingFile = this.getUploadingFileById( fileId );
+
+    if (!uploadingFile) {
+      return;
+    }
+
+    /**
+     * Make log about loading progress
+     */
+
+    const percentMultiplier = 100;
+    const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.chunks.length / this.bufferLimit) * percentMultiplier);
+
+    this.log('File ' + fileId + ' uploaded on: ' + percent + '%');
+
+    /**
+     * Implement sending chunk, because previous was uploaded
+     */
+    uploadingFile.sendingChunk = uploadingFile.sendingChunk + 1;
+
+    uploadingFile.resendTimes = 0;
+
+    /**
+     * Clear resend timeout, because chunk is uploaded
+     */
+    if (uploadingFile.timeoutId) {
+      clearTimeout(uploadingFile.timeoutId);
+    }
+
+    this.sendChunk(MessageFactory.createMessageForChunk(), fileId);
+  }
+
+  /**
    * This method returns file by file id
    *
    * @param fileId - file id of file to find
    */
-  private getUploadingFileById(fileId: string): undefined | FileToUpload<ApiResponse> {
+  private getUploadingFileById(fileId: string): undefined | FileToUpload<ApiResponse['payload']> {
     return this.uploadingFiles.find((req) => req.id === fileId);
+  }
+
+  /**
+   * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
+   *
+   * @param chunkNumber - number of sending chunk
+   * @param size - length of file data in chunk
+   */
+  private makeMetaData(chunkNumber: number, size: number): Buffer {
+    const sizeForMetaData = 4;
+
+    const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
+
+    bufferChunkNumber.writeInt32BE(chunkNumber);
+
+    const bufferSize = Buffer.alloc(sizeForMetaData);
+
+    bufferSize.writeInt32BE(size);
+
+    return Buffer.concat([bufferChunkNumber, bufferSize]);
   }
 
   /**
@@ -457,28 +523,23 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     try {
       const message = JSON.parse(event.data.toString());
       const messageId = message.messageId;
-
       const payload = message.payload;
 
       if ('fileId' in payload) {
-        const file = this.getUploadingFileById(payload.fileId);
-
-        if (file) {
-          const percentMultiplier = 100;
-          const percent = Math.floor(payload.chunkNumber / file.chunks.length * percentMultiplier);
-
-          this.log('File ' + message.payload.fileId + ' uploaded on: ' + percent + '%');
-        }
+        this.onChunkResponseMessage( payload.fileId, payload.chunkNumber );
       } else if ('type' in message) {
         this.options.onMessage(message);
       }
 
       const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
 
-      const file = this.uploadingFiles.find(req => req.id === messageId);
+      const file = this.getUploadingFileById(messageId);
 
       if (file) {
         file.cb(message.payload);
+        if (file.timeoutId) {
+          clearTimeout( file.timeoutId );
+        }
         this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       }
 
@@ -520,7 +581,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const file = this.getUploadingFileById(enqueuedChunk.fileId);
 
       if (file ) {
-        this.sendChunk(file.chunks[enqueuedChunk.chunkNumber], enqueuedChunk.chunkNumber, enqueuedChunk.message, enqueuedChunk.fileId);
+        this.sendChunk( enqueuedChunk.message, enqueuedChunk.fileId );
       }
     }
   }
