@@ -261,7 +261,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const message = MessageFactory.createMessageForChunk(type, payload, chunks, fileSize);
 
-      this.sendChunk( message, fileId );
+      const chunkNumber = 1;
+
+      this.sendChunk( message, fileId, chunkNumber );
     });
   }
 
@@ -271,8 +273,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    *
    * @param message - additional info for chunk
    * @param fileId - id of sending file
+   * @param chunkNumber - number of sending chunk
    */
-  private sendChunk(message: string, fileId: string): void {
+  private sendChunk(message: string, fileId: string, chunkNumber: number): void {
     const uploadingFile = this.getUploadingFileById(fileId);
 
     if (!uploadingFile) {
@@ -282,9 +285,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
-    const chunk = uploadingFile.chunks.slice( uploadingFile.sendingChunk * this.bufferLimit, this.bufferLimit + this.bufferLimit * uploadingFile.sendingChunk );
+    const chunk = uploadingFile.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
 
-    const meta = this.makeMetaData(uploadingFile.sendingChunk, chunk.length);
+    const meta = this.makeMetaData(chunkNumber, chunk.length);
 
     /**
      * Unite meta with file data
@@ -308,7 +311,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
       this.enqueuedBufferMessages.push({
         fileId: fileId,
-        chunkNumber: uploadingFile.sendingChunk,
+        chunkNumber: chunkNumber,
         message: message,
       });
     } else {
@@ -318,7 +321,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        * Create timeout, which will work in case of no respond from server
        */
       uploadingFile.responseWaitingTimeoutId = setTimeout( () => {
-        this.sendChunk(message, fileId);
+        this.sendChunk(message, fileId, chunkNumber);
 
         uploadingFile.resendTimes++;
       }, this.reconnectionTimeout );
@@ -416,7 +419,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       clearTimeout(uploadingFile.responseWaitingTimeoutId);
     }
 
-    this.sendChunk(MessageFactory.createMessageForChunk(), fileId);
+    this.sendChunk(MessageFactory.createMessageForChunk(), fileId, uploadingFile.sendingChunk);
   }
 
   /**
@@ -600,7 +603,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       const file = this.getUploadingFileById(enqueuedChunk.fileId);
 
       if (file ) {
-        this.sendChunk( enqueuedChunk.message, enqueuedChunk.fileId );
+        this.sendChunk( enqueuedChunk.message, enqueuedChunk.fileId, enqueuedChunk.chunkNumber );
       }
     }
   }
