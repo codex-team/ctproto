@@ -140,11 +140,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       let msgWaiter: NodeJS.Timeout;
       const msgWaitingTime = 3000;
 
-      /**
-       * Set type of incoming binary data to Buffer, because default value is blob
-       */
-      socket.binaryType = 'nodebuffer';
-
       socket.on('message', (message: ws.Data) => {
         if (msgWaiter) {
           clearTimeout(msgWaiter);
