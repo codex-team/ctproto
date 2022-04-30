@@ -284,9 +284,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const uploadingFile = this.getUploadingFileById(fileId);
 
     if (!uploadingFile) {
-      this.log('File ' + fileId + 'has not found')
 
-      return;
+      throw new Error('File ' + fileId + ' has not found')
     }
 
     /**
@@ -403,7 +402,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const uploadingFile = this.getUploadingFileById( fileId );
 
     if (!uploadingFile) {
-      return;
+      throw new Error('File ' + fileId + 'has not found');
     }
 
     /**
