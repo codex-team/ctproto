@@ -93,7 +93,7 @@ interface FileToUpload<MessagePayload> {
   responseWaitingTimeoutId?: NodeJS.Timeout;
 
   /**
-   * Number of chunk resend
+   * Number of attempts to send a chunk
    */
   resendTimes: number;
 
