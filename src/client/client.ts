@@ -83,11 +83,6 @@ interface FileToUpload<MessagePayload> {
   chunks: Buffer;
 
   /**
-   * What chunk is sending now
-   */
-  sendingChunk: number;
-
-  /**
    * Timeout id of resending chunks
    */
   responseWaitingTimeoutId?: NodeJS.Timeout;
@@ -259,7 +254,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       this.uploadingFiles.push({
         id: fileId,
         chunks: file,
-        sendingChunk: 0,
         cb: callback,
         resendTimes: 0,
       });
@@ -414,11 +408,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
     this.log('File ' + fileId + ' uploaded on ' + percent + '%');
 
-    /**
-     * Increment sending chunk number, because previous was uploaded
-     */
-    uploadingFile.sendingChunk = uploadingFile.sendingChunk + 1;
-
     uploadingFile.resendTimes = 0;
 
     /**
@@ -428,7 +417,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       clearTimeout(uploadingFile.responseWaitingTimeoutId);
     }
 
-    this.sendChunk(MessageFactory.createMessageForChunk(), fileId, uploadingFile.sendingChunk);
+    this.sendChunk(MessageFactory.createMessageForChunk(), fileId, chunkNumber + 1);
   }
 
   /**
