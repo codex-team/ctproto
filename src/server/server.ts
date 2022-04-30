@@ -176,7 +176,21 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param data - message data
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
-    await this.validateTextMessage(data, socket);
+    try {
+      await this.validateTextMessage(data);
+    } catch (error) {
+    const errorMessage = (error as Error).message;
+
+    this.log(`Wrong message accepted: ${errorMessage} `, data);
+
+    if (error instanceof CriticalError) {
+      socket.close(CloseEventCode.UnsupportedData, errorMessage);
+    } else {
+      socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
+    }
+
+    return;
+    }
 
     const client = this.clients.find((c) => c.socket === socket).current();
 
@@ -203,28 +217,15 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * Method for string message
    *
    * @param data - message data
-   * @param socket - socket
    */
-  private async validateTextMessage(data: unknown, socket: ws): Promise<void> {
+  private async validateTextMessage(data: unknown): Promise<void> {
     const isString = data instanceof String;
 
-    if (isString) {
-      try {
-        MessageValidator.validateMessage(data as string);
-      } catch (error) {
-        const errorMessage = (error as Error).message;
-
-        this.log(`Wrong message accepted: ${errorMessage} `, data);
-
-        if (error instanceof CriticalError) {
-          socket.close(CloseEventCode.UnsupportedData, errorMessage);
-        } else {
-          socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
-        }
-
-        return;
-      }
+    if (!isString){
+      return
     }
+
+    MessageValidator.validateMessage(data as string);
   }
 
   /**
