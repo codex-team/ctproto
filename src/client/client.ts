@@ -279,6 +279,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const uploadingFile = this.getUploadingFileById(fileId);
 
     if (!uploadingFile) {
+      this.log('File ' + fileId + 'has not found')
+
       return;
     }
 
@@ -287,6 +289,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
      */
     const chunk = uploadingFile.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
 
+    /**
+     * Getting additional info ( meta data ) converted to binary type, which includes info about chunk number and chunk size
+     */
     const meta = this.makeMetaData(chunkNumber, chunk.length);
 
     /**
