@@ -251,7 +251,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Create new uploading file to save data for file uploading
        */
-      this.uploadingFiles.push({ 
+      this.uploadingFiles.push({
         id: fileId,
         chunks: file,
         sendingChunk: 0,
@@ -317,7 +317,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Create timeout, which will work in case of no respond from server
        */
-      uploadingFile.timeoutId = setTimeout( () => {
+      uploadingFile.responseWaitingTimeoutId = setTimeout( () => {
         this.sendChunk(message, fileId);
 
         uploadingFile.resendTimes++;
@@ -412,8 +412,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Clear resend timeout, because chunk is uploaded
      */
-    if (uploadingFile.timeoutId) {
-      clearTimeout(uploadingFile.timeoutId);
+    if (uploadingFile.responseWaitingTimeoutId) {
+      clearTimeout(uploadingFile.responseWaitingTimeoutId);
     }
 
     this.sendChunk(MessageFactory.createMessageForChunk(), fileId);
@@ -547,8 +547,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       if (file) {
         file.cb(message.payload);
-        if (file.timeoutId) {
-          clearTimeout( file.timeoutId );
+        if (file.responseWaitingTimeoutId) {
+          clearTimeout( file.responseWaitingTimeoutId );
         }
         this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       }
