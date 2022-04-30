@@ -3,7 +3,7 @@ import { ResponseMessage } from '../../../types';
 /**
  * File response payload
  */
-export interface FileRequestResponsePayload {
+export interface UploadFileResponsePayload {
     /**
      * Path of file
      */
@@ -13,4 +13,4 @@ export interface FileRequestResponsePayload {
 /**
  * Describes the response file uploading
  */
-export default interface FileRequestResponse extends ResponseMessage<FileRequestResponsePayload> {}
+export default interface UploadFileResponse extends ResponseMessage<UploadFileResponsePayload> {}

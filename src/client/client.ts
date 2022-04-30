@@ -69,7 +69,7 @@ interface Request<MessagePayload> {
 }
 
 /**
- * Files to upload
+ * Describing the file that is enqueued for uploading
  */
 interface FileToUpload<MessagePayload> {
   /**
@@ -90,7 +90,7 @@ interface FileToUpload<MessagePayload> {
   /**
    * Timeout id of resending chunks
    */
-  timeoutId?: NodeJS.Timeout;
+  responseWaitingTimeoutId?: NodeJS.Timeout;
 
   /**
    * Number of chunk resend
@@ -130,7 +130,7 @@ interface EnqueuedMessage<ApiRequest extends NewMessage<unknown>> {
  */
 interface EnqueuedChunkMessage {
   /**
-   * File if
+   * Id of the sending file that contains the chunk
    */
   fileId: string,
 
@@ -140,7 +140,7 @@ interface EnqueuedChunkMessage {
   chunkNumber: number,
 
   /**
-   * Chunk message
+   * Message to be passed with the chunk. JSON stringified.
    */
   message: string,
 }
@@ -190,7 +190,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private uploadingFiles: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
 
   /**
-   * Limit for the chunk size at bytes
+   * Limit for the chunk size in bytes
    */
   private readonly bufferLimit = 10000;
 
@@ -251,7 +251,8 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Create new uploading file to save data for file uploading
        */
-      this.uploadingFiles.push({ id: fileId,
+      this.uploadingFiles.push({ 
+        id: fileId,
         chunks: file,
         sendingChunk: 0,
         cb: callback,
@@ -291,7 +292,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const data = Buffer.concat([meta, chunk]);
 
     /**
-     * If there is more then 5 attempts to send chunk, uploading file removes
+     * If there are more then 5 attempts to send chunk, remove uploading file
      */
     if ( uploadingFile.resendTimes > this.reconnectionAttempts ) {
       /**
@@ -319,7 +320,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       uploadingFile.timeoutId = setTimeout( () => {
         this.sendChunk(message, fileId);
 
-        uploadingFile.resendTimes = uploadingFile.resendTimes + 1;
+        uploadingFile.resendTimes++;
       }, this.reconnectionTimeout );
     }
   }
@@ -399,10 +400,10 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const percentMultiplier = 100;
     const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.chunks.length / this.bufferLimit) * percentMultiplier);
 
-    this.log('File ' + fileId + ' uploaded on: ' + percent + '%');
+    this.log('File ' + fileId + ' uploaded on ' + percent + '%');
 
     /**
-     * Implement sending chunk, because previous was uploaded
+     * Increment sending chunk number, because previous was uploaded
      */
     uploadingFile.sendingChunk = uploadingFile.sendingChunk + 1;
 
