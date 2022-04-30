@@ -340,14 +340,14 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const chunk = uploadingFile.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
 
     /**
-     * Getting additional info ( meta data ) converted to binary type, which includes info about chunk number and chunk size
+     * Getting additional info converted to binary type, which includes info about chunk number and chunk size
      */
-    const meta = this.makeMetaData(chunkNumber, chunk.length);
+    const additionalData = this.makeAdditionalDataForChunk(chunkNumber, chunk.length);
 
     /**
      * Unite meta with file data
      */
-    const data = Buffer.concat([meta, chunk]);
+    const data = Buffer.concat([additionalData, chunk]);
 
     /**
      * If there are more then 5 attempts to send chunk, remove uploading file
@@ -441,7 +441,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param chunkNumber - number of sending chunk
    * @param size - length of file data in chunk
    */
-  private makeMetaData(chunkNumber: number, size: number): Buffer {
+  private makeAdditionalDataForChunk(chunkNumber: number, size: number): Buffer {
     const sizeForMetaData = 4;
 
     const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
