@@ -1,6 +1,6 @@
 import MessageFactory from '../messageFactory';
 import { NewMessage, ResponseMessage } from '../../types';
-import {FileRequest} from "../../types/file";
+import { FileRequest } from '../../types/file';
 
 /**
  * Available options for the CTProtoClient
@@ -267,71 +267,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     });
   }
 
-
-  /**
-   * This method sends one chunk of the uploading file
-   *
-   * @param message - additional info for chunk
-   * @param fileId - id of sending file
-   * @param chunkNumber - number of sending chunk
-   */
-  private sendChunk(message: string, fileId: string, chunkNumber: number): void {
-    const uploadingFile = this.getUploadingFileById(fileId);
-
-    if (!uploadingFile) {
-
-      throw new Error('File ' + fileId + ' has not found')
-    }
-
-    /**
-     * Getting chunk by slicing file by the chunk number and buffer limit
-     */
-    const chunk = uploadingFile.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
-
-    /**
-     * Getting additional info ( meta data ) converted to binary type, which includes info about chunk number and chunk size
-     */
-    const meta = this.makeMetaData(chunkNumber, chunk.length);
-
-    /**
-     * Unite meta with file data
-     */
-    const data = Buffer.concat([meta, chunk]);
-
-    /**
-     * If there are more then 5 attempts to send chunk, remove uploading file
-     */
-    if ( uploadingFile.resendTimes > this.reconnectionAttempts ) {
-      /**
-       * Remove uploading file
-       */
-      this.uploadingFiles.splice(this.uploadingFiles.indexOf(uploadingFile), 1);
-
-      throw new Error('There is no response from server to ' + uploadingFile.resendTimes + ' attempts to send chunk')
-    }
-
-    const bufferMessage = MessageFactory.packChunk(fileId, data, message);
-
-    if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
-      this.enqueuedBufferMessages.push({
-        fileId: fileId,
-        chunkNumber: chunkNumber,
-        message: message,
-      });
-    } else {
-      this.socket.send(bufferMessage);
-
-      /**
-       * Create timeout, which will work in case of no respond from server
-       */
-      uploadingFile.responseWaitingTimeoutId = setTimeout( () => {
-        this.sendChunk(message, fileId, chunkNumber);
-
-        uploadingFile.resendTimes++;
-      }, this.chunkResendingTimeout );
-    }
-  }
-
   /**
    * This method sends requests
    * When response comes callback function will be called
@@ -385,6 +320,69 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         cb: callback,
       });
     });
+  }
+
+  /**
+   * This method sends one chunk of the uploading file
+   *
+   * @param message - additional info for chunk
+   * @param fileId - id of sending file
+   * @param chunkNumber - number of sending chunk
+   */
+  private sendChunk(message: string, fileId: string, chunkNumber: number): void {
+    const uploadingFile = this.getUploadingFileById(fileId);
+
+    if (!uploadingFile) {
+      throw new Error('File ' + fileId + ' has not found');
+    }
+
+    /**
+     * Getting chunk by slicing file by the chunk number and buffer limit
+     */
+    const chunk = uploadingFile.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
+
+    /**
+     * Getting additional info ( meta data ) converted to binary type, which includes info about chunk number and chunk size
+     */
+    const meta = this.makeMetaData(chunkNumber, chunk.length);
+
+    /**
+     * Unite meta with file data
+     */
+    const data = Buffer.concat([meta, chunk]);
+
+    /**
+     * If there are more then 5 attempts to send chunk, remove uploading file
+     */
+    if ( uploadingFile.resendTimes > this.reconnectionAttempts ) {
+      /**
+       * Remove uploading file
+       */
+      this.uploadingFiles.splice(this.uploadingFiles.indexOf(uploadingFile), 1);
+
+      throw new Error('There is no response from server to ' + uploadingFile.resendTimes + ' attempts to send chunk');
+    }
+
+    const bufferMessage = MessageFactory.packChunk(fileId, data, message);
+
+    if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
+      this.enqueuedBufferMessages.push({
+        fileId: fileId,
+        chunkNumber: chunkNumber,
+        message: message,
+      });
+    } else {
+      this.socket.send(bufferMessage);
+
+      /**
+       * Create timeout, which will work in case of no respond from server
+       */
+      uploadingFile.responseWaitingTimeoutId = setTimeout( () => {
+        this.sendChunk(message, fileId, chunkNumber);
+
+        uploadingFile.resendTimes++;
+      }, this.chunkResendingTimeout );
+    }
   }
 
   /**

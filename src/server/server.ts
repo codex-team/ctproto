@@ -174,17 +174,17 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     try {
       await this.validateTextMessage(data);
     } catch (error) {
-    const errorMessage = (error as Error).message;
+      const errorMessage = (error as Error).message;
 
-    this.log(`Wrong message accepted: ${errorMessage} `, data);
+      this.log(`Wrong message accepted: ${errorMessage} `, data);
 
-    if (error instanceof CriticalError) {
-      socket.close(CloseEventCode.UnsupportedData, errorMessage);
-    } else {
-      socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
-    }
+      if (error instanceof CriticalError) {
+        socket.close(CloseEventCode.UnsupportedData, errorMessage);
+      } else {
+        socket.send(MessageFactory.createError('Message Format Error: ' + errorMessage));
+      }
 
-    return;
+      return;
     }
 
     const client = this.clients.find((c) => c.socket === socket).current();
@@ -216,8 +216,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   private async validateTextMessage(data: unknown): Promise<void> {
     const isString = data instanceof String;
 
-    if (!isString){
-      return
+    if (!isString) {
+      return;
     }
 
     MessageValidator.validateMessage(data as string);
