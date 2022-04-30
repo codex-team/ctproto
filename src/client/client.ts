@@ -1,5 +1,6 @@
 import MessageFactory from '../messageFactory';
 import { NewMessage, ResponseMessage } from '../../types';
+import {FileRequest} from "../../types/file";
 
 /**
  * Available options for the CTProtoClient
@@ -151,7 +152,7 @@ interface EnqueuedChunkMessage {
  * @template ApiResponse - the type described all available API response messages
  * @template ApiUpdate - the type described all available message initialized by the API
  */
-export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>> {
+export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>, ApiUploadRequest extends FileRequest<unknown>> {
   /**
    * Instance of WebSocket
    */
@@ -229,9 +230,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param payload - available request payload
    */
   public async sendFile(
-    type: ApiRequest['type'],
+    type: ApiUploadRequest['type'],
     file: Buffer,
-    payload: ApiRequest['payload']
+    payload: ApiUploadRequest['payload']
 
   ): Promise<ApiResponse['payload']> {
     return new Promise( resolve => {
