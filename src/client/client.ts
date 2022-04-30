@@ -246,7 +246,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       /**
        * Calculate number of chunks
        */
-      const chunks = Math.ceil(file.length / this.bufferLimit);
+      const chunks = this.calculateChunksNumber(file);
 
       /**
        * Create new uploading file to save data for file uploading
@@ -426,6 +426,15 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    */
   private getUploadingFileById(fileId: string): undefined | FileToUpload<ApiResponse['payload']> {
     return this.uploadingFiles.find((req) => req.id === fileId);
+  }
+
+  /**
+   * This method calculate number of sending file chunks
+   *
+   * @param file - file to send
+   */
+  private calculateChunksNumber(file: Buffer): number {
+    return Math.ceil(file.length / this.bufferLimit);
   }
 
   /**
