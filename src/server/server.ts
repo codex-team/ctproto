@@ -324,7 +324,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Create Buffer for file data
        */
-      const fileData = Buffer.alloc(payload.fileSize, 0);
+      const fileData = Buffer.alloc(fileChunk.length, 0);
 
       fileChunk.copy(fileData, 0);
 
@@ -337,7 +337,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         chunks: payload.chunks,
         payload: payload.payload,
         type: payload.type,
-        bufferLimit: size,
       } );
 
       file = this.uploadingFiles.find((req) => req.id === fileId);
@@ -345,7 +344,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Push file data
        */
-      fileChunk.copy(file.file, file.bufferLimit * chunkNumber);
+      const fileData = Buffer.concat([file.file, Buffer.alloc(fileChunk.length)]);
+
+      fileChunk.copy(fileData, file.file.length);
+
+      file.file = fileData;
 
       file.uploadedChunksCount = file.uploadedChunksCount + 1;
     }

@@ -242,8 +242,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const fileId = MessageFactory.createFileId();
 
-      const fileSize = file.length;
-
       /**
        * Calculate number of chunks
        */
@@ -259,7 +257,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         resendTimes: 0,
       });
 
-      const message = MessageFactory.createMessageForChunk(type, payload, chunks, fileSize);
+      const message = MessageFactory.createMessageForChunk(type, payload, chunks);
 
       const chunkNumber = 0;
 

@@ -33,11 +33,6 @@ export interface UploadingFile {
    * Number of uploaded file chunks
    */
   uploadedChunksCount: number
-
-  /**
-   * Buffer limit on the client side, it helps to make slice in buffer to store chunk to it
-   */
-  bufferLimit: number
 }
 
 /**
