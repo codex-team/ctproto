@@ -33,6 +33,11 @@ export interface UploadingFile {
    * Number of uploaded file chunks
    */
   uploadedChunksCount: number
+
+  /**
+   * Timeout id of chunks uploading
+   */
+  uploadingWaitingTimeoutId?: NodeJS.Timeout;
 }
 
 /**

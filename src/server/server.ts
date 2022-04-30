@@ -108,6 +108,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   private uploadingFiles: Array<UploadingFile>;
 
   /**
+   * Time between chunk uploading
+   */
+  private readonly chunkWaitingTimeout = 15000;
+
+  /**
    * Configuration options passed on Transport initialization
    */
   private readonly options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest>;
@@ -342,6 +347,13 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       file = this.uploadingFiles.find((req) => req.id === fileId);
     } else {
       /**
+       * Clear timeout, if chunk comes
+       */
+      if (file.uploadingWaitingTimeoutId) {
+        clearTimeout(file.uploadingWaitingTimeoutId);
+      }
+
+      /**
        * Push file data
        */
       const fileData = Buffer.concat([file.file, Buffer.alloc(fileChunk.length)]);
@@ -373,6 +385,15 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       client.respond(fileId, response);
     }
+
+    /**
+     * Set timeout to remove file, in case of no chunks incoming
+     */
+    file.uploadingWaitingTimeoutId = setTimeout( () => {
+      if (file) {
+        this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
+      }
+    }, this.chunkWaitingTimeout );
   }
 
   /**
