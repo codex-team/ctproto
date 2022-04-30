@@ -271,7 +271,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param message - additional info for chunk
    * @param fileId - id of sending file
    */
-  public sendChunk(message: string, fileId: string): void {
+  private sendChunk(message: string, fileId: string): void {
     const uploadingFile = this.getUploadingFileById(fileId);
 
     if (!uploadingFile) {
