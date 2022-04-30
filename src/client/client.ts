@@ -211,6 +211,11 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private reconnectionAttempts = 5;
 
   /**
+   * Time between chunk sending attempts
+   */
+  private readonly chunkResendingTimeout = 5000;
+
+  /**
    * Constructor
    *
    * @param options - Transport options
@@ -329,7 +334,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         this.sendChunk(message, fileId, chunkNumber);
 
         uploadingFile.resendTimes++;
-      }, this.reconnectionTimeout );
+      }, this.chunkResendingTimeout );
     }
   }
 
