@@ -308,7 +308,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        */
       this.uploadingFiles.splice(this.uploadingFiles.indexOf(uploadingFile), 1);
 
-      return;
+      throw new Error('There is no response from server to ' + uploadingFile.resendTimes + ' attempts to send chunk')
     }
 
     const bufferMessage = MessageFactory.packChunk(fileId, data, message);
