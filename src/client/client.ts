@@ -260,7 +260,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
       const message = MessageFactory.createMessageForChunk(type, payload, chunks, fileSize);
 
-      const chunkNumber = 1;
+      const chunkNumber = 0;
 
       this.sendChunk( message, fileId, chunkNumber );
     });
