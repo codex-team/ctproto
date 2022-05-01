@@ -341,9 +341,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const chunk = file.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
 
     /**
-     * Getting additional info converted to binary type, which includes info about chunk number and chunk size
+     * Getting info converted to binary type, which includes info about chunk number and chunk size
      */
-    const additionalData = this.makeAdditionalDataForChunk(chunkNumber, chunk.length);
+    const additionalData = this.makeDataAboutChunk(chunkNumber, chunk.length);
 
     /**
      * Unite meta with file data
@@ -442,7 +442,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param chunkNumber - number of sending chunk
    * @param size - length of file data in chunk
    */
-  private makeAdditionalDataForChunk(chunkNumber: number, size: number): Buffer {
+  private makeDataAboutChunk(chunkNumber: number, size: number): Buffer {
     const sizeForMetaData = 4;
 
     const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
