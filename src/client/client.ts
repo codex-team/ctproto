@@ -393,7 +393,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     const uploadingFile = this.getUploadingFileById( fileId );
 
     if (!uploadingFile) {
-      throw new Error('File ' + fileId + 'has not found');
+      throw new Error(`Couldn't proceed the chunk response because the file ${fileId} is not exist`);
     }
 
     /**
@@ -589,7 +589,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    */
   private sendEnqueuedBufferMessages(): void {
     while (this.enqueuedBufferMessages.length > 0) {
-      const enqueuedChunk= this.enqueuedBufferMessages.shift();
+      const enqueuedChunk = this.enqueuedBufferMessages.shift();
 
       if ( !enqueuedChunk ) {
         return;
