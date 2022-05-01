@@ -6,8 +6,8 @@ import { client } from './client';
  * @param file - file to send
  * @param fileName - uploading file name
  */
-export function uploadFile ( file: Buffer, fileName: string ){
-  client.sendFile('upload-file', file, { fileName: fileName }).then(
+export function uploadExampleFile ( file: Buffer, fileName: string ){
+  client.sendFile('upload-example-file', file, { fileName: fileName }).then(
     (res) => {
       console.log('Response with info about destination of your uploaded file:', res);
     }

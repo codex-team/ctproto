@@ -41,7 +41,7 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
       }
     },
     async onUploadMessage(uploadMessage: ApiUploadRequest): Promise<ApiResponse['payload'] | void> {
-      if (uploadMessage.type == 'upload-file') {
+      if (uploadMessage.type == 'upload-example-file') {
         fs.writeFileSync('./files/' + uploadMessage.payload.fileName, uploadMessage.file);
         return {
           path: fs.realpathSync('./files/') + '/' + uploadMessage.payload.fileName,
