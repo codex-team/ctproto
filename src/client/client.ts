@@ -263,7 +263,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         throw new Error('File ' + fileId + ' has not found');
       }
 
-      const message = MessageFactory.createMessageForChunk(type, payload, chunks);
+      const message = MessageFactory.createBufferPayload(type, payload, chunks);
 
       const chunkNumber = 0;
 
@@ -415,7 +415,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       clearTimeout(uploadingFile.responseWaitingTimeoutId);
     }
 
-    this.sendChunk(uploadingFile, chunkNumber + 1, MessageFactory.createMessageForChunk());
+    this.sendChunk(uploadingFile, chunkNumber + 1, MessageFactory.createBufferPayload());
   }
 
   /**
