@@ -371,20 +371,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       }
 
       /**
-       * Push file data
+       * Update file data
        */
-      let fileData;
-
-      if (file.file.length < chunkSlice + fileChunk.length) {
-        fileData = Buffer.alloc(chunkSlice + fileChunk.length);
-        file.file.copy(fileData);
-        fileChunk.copy(fileData, chunkSlice);
-      } else {
-        fileData = file.file;
-        fileChunk.copy(fileData, chunkSlice);
-      }
-
-      file.file = fileData;
+      this.updateFileData(file, chunkSlice, fileChunk);
     }
 
     if ( !file ) {
@@ -395,7 +384,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
 
     if (this.isFileFullyUploaded(file)) {
       /**
-       * Make an file request object
+       * Make file request object
        */
       const parsedFile = {
         type: file.type,
@@ -403,10 +392,16 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         file: file.file,
       } as ApiUploadRequest;
 
+      /**
+       * Make response for fully uploaded file
+       */
       const response = await this.options.onUploadMessage(parsedFile);
 
       client.respond(fileId, response);
     } else {
+      /**
+       * Make response for incoming chunk
+       */
       const response = {
         chunkNumber: chunkNumber,
         type: file.type,
@@ -424,6 +419,31 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       }
     }, this.chunkWaitingTimeout );
+  }
+
+  /**
+   * Update file data, insert incoming chunk
+   *
+   * @param file - uploading file
+   * @param chunkSlice - chunk offset
+   * @param fileChunk - data to insert
+   */
+  private updateFileData(file: UploadingFile, chunkSlice: number, fileChunk: Buffer): void {
+    let fileData;
+
+    /**
+     * Push file data
+     */
+    if (file.file.length < chunkSlice + fileChunk.length) {
+      fileData = Buffer.alloc(chunkSlice + fileChunk.length);
+      file.file.copy(fileData);
+      fileChunk.copy(fileData, chunkSlice);
+    } else {
+      fileData = file.file;
+      fileChunk.copy(fileData, chunkSlice);
+    }
+
+    file.file = fileData;
   }
 
   /**
