@@ -335,15 +335,22 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       fileChunk.copy(fileData, chunkSlice);
 
       /**
-       * Create new file object
+       * Create new file object, the first chunk has more info about file ( chunks, payload, type of request )
        */
-      this.uploadingFiles.push( { id: fileId,
-        uploadedChunks: [],
-        file: fileData,
-        chunks: payload.chunks,
-        payload: payload.payload,
-        type: payload.type,
-      } );
+      if (chunkNumber === 0) {
+        this.uploadingFiles.push( { id: fileId,
+          uploadedChunks: [],
+          file: fileData,
+          chunks: payload.chunks,
+          payload: payload.payload,
+          type: payload.type,
+        } );
+      } else {
+        this.uploadingFiles.push( { id: fileId,
+          uploadedChunks: [],
+          file: fileData,
+        } );
+      }
 
       file = this.uploadingFiles.find((req) => req.id === fileId);
     } else {
@@ -353,6 +360,16 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       if (file.uploadingWaitingTimeoutId) {
         clearTimeout(file.uploadingWaitingTimeoutId);
       }
+
+      /**
+       * In case if the first chunk comes not first, push more file data to uploading file object
+       */
+      if (chunkNumber === 0) {
+        file.chunks = payload.chunks;
+        file.type = payload.type;
+        file.payload = payload.payload;
+      }
+
       /**
        * Push file data
        */
@@ -415,6 +432,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param file - uploading file
    */
   private isFileFullyUploaded(file: UploadingFile): boolean {
+    if (!file.chunks) {
+      return false;
+    }
     for ( let i = 0 ; i < file.chunks ; i++ ) {
       if (!file.uploadedChunks[i]) {
         return false;

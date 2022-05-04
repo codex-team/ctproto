@@ -12,12 +12,12 @@ export interface UploadingFile {
   /**
    * File request type
    */
-  type: string;
+  type?: string;
 
   /**
    * Additional information
    */
-  payload: unknown,
+  payload?: unknown,
 
   /**
    * Whole file buffer, it replenishes when new chunk comes
@@ -27,7 +27,7 @@ export interface UploadingFile {
   /**
    * Number of file chunks
    */
-  chunks: number,
+  chunks?: number,
 
   /**
    * Array with info about uploading chunks
