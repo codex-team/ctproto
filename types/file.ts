@@ -27,12 +27,12 @@ export interface UploadingFile {
   /**
    * Number of file chunks
    */
-  chunks: number
+  chunks: number,
 
   /**
-   * Number of uploaded file chunks
+   * Array with info about uploading chunks
    */
-  uploadedChunksCount: number
+  uploadedChunks: Array<boolean>,
 
   /**
    * Timeout id of chunks uploading

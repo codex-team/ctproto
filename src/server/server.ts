@@ -336,7 +336,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Create new file object
        */
       this.uploadingFiles.push( { id: fileId,
-        uploadedChunksCount: 1,
+        uploadedChunks: [],
         file: fileData,
         chunks: payload.chunks,
         payload: payload.payload,
@@ -360,29 +360,35 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       fileChunk.copy(fileData, file.file.length);
 
       file.file = fileData;
-
-      file.uploadedChunksCount = file.uploadedChunksCount + 1;
     }
 
     if ( !file ) {
       return;
     }
 
-    /**
-     * Get response for file uploading message
-     */
-    const response = await this.checkFileFullness(file, chunkNumber);
+    file.uploadedChunks[chunkNumber] = true;
 
-    /**
-     * If file not fully uploaded, response consists 'chunkNumber' parameter, and response makes by message id
-     */
-    if (Object.prototype.hasOwnProperty.call(response, 'chunkNumber')) {
-      client.respond(payload.id, response);
-    } else {
+    if (this.isFileFullyUploaded(file)) {
       /**
-       * If file fully uploaded response makes by file id
+       * Make an file request object
        */
+      const parsedFile = {
+        type: file.type,
+        payload: file.payload,
+        file: file.file,
+      } as ApiUploadRequest;
+
+      const response = await this.options.onUploadMessage(parsedFile);
+
       client.respond(fileId, response);
+    } else {
+      const response = {
+        chunkNumber: chunkNumber,
+        type: file.type,
+        fileId: file.id,
+      };
+
+      client.respond(payload.id, response);
     }
 
     /**
@@ -396,42 +402,18 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   }
 
   /**
-   * Parse and hand over to onMessage if file data is full
+   * Check is file fully uploaded
    *
    * @param file - uploading file
-   * @param chunkNumber - number of incoming chunk
    */
-  private async checkFileFullness(file: UploadingFile, chunkNumber: number): Promise <ApiResponse['payload']> {
-    let response;
-
-    /**
-     * Check is file fully uploaded
-     */
-    if (file.chunks === file.uploadedChunksCount) {
-      /**
-       * Make an file request object
-       */
-      const parsedFile = {
-        type: file.type,
-        payload: file.payload,
-        file: file.file,
-      } as ApiUploadRequest;
-
-      /**
-       * Remove file from uploading files
-       */
-      this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
-
-      response = await this.options.onUploadMessage(parsedFile);
-    } else {
-      response = {
-        chunkNumber: chunkNumber,
-        type: file.type,
-        fileId: file.id,
-      };
+  private isFileFullyUploaded(file: UploadingFile): boolean {
+    for ( let i = 0 ; i < file.chunks ; i++ ) {
+      if (!file.uploadedChunks[i]) {
+        return false;
+      }
     }
 
-    return response;
+    return true;
   }
 
   /**
