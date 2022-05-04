@@ -177,7 +177,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
     try {
-      await this.validateTextMessage(data);
+      if (!this.isFileTransportMessage(data)) {
+        await MessageValidator.validateMessage(data);
+      } else {
+        await MessageValidator.validateBufferMessage(data);
+      }
     } catch (error) {
       const errorMessage = (error as Error).message;
 
@@ -214,21 +218,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   }
 
   /**
-   * Method for string message
-   *
-   * @param data - message data
-   */
-  private async validateTextMessage(data: unknown): Promise<void> {
-    const isString = data instanceof String;
-
-    if (!isString) {
-      return;
-    }
-
-    MessageValidator.validateMessage(data as string);
-  }
-
-  /**
    * Process the first message:
    *  - check authorization
    *  - save client
@@ -257,6 +246,16 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       socket.close(CloseEventCode.PolicyViolation, 'Authorization failed: ' + (error as Error).message);
     }
   }
+
+  /**
+   * Check is data file transport message
+   *
+   * @param data - incoming data
+   */
+  private isFileTransportMessage(data: unknown): boolean {
+    return data instanceof Buffer;
+  }
+
 
   /**
    * Process not-first message.
