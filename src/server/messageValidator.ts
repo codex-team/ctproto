@@ -87,7 +87,8 @@ export default class MessageValidator {
      */
     const fileIdLength = 10;
     const sizeOffset = 14;
-    const sizeDataLength = 4;
+    const chunkSliceOffset = 18;
+    const chunkSliceDataLength = 4;
 
     const fileId = message.slice(0, fileIdLength).toString();
     const size = message.readInt32BE(sizeOffset);
@@ -95,7 +96,7 @@ export default class MessageValidator {
     /**
      * Getting file data
      */
-    const dataOffset = sizeOffset + sizeDataLength;
+    const dataOffset = chunkSliceOffset + chunkSliceDataLength;
 
     /**
      * Parsing payload message in buffer message

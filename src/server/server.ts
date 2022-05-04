@@ -300,16 +300,18 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const fileIdLength = 10;
     const chunkNumberOffset = 10;
     const sizeOffset = 14;
-    const sizeDataLength = 4;
+    const chunkSliceOffset = 18;
+    const chunkSliceDataLength = 4;
 
     const fileId = message.slice(0, fileIdLength).toString();
     const chunkNumber = message.readInt32BE(chunkNumberOffset);
     const size = message.readInt32BE(sizeOffset);
+    const chunkSlice = message.readInt32BE(chunkSliceOffset);
 
     /**
      * Getting file data
      */
-    const dataOffset = sizeOffset + sizeDataLength;
+    const dataOffset = chunkSliceOffset + chunkSliceDataLength;
     const fileChunk = message.slice(dataOffset, dataOffset + size);
 
     /**
@@ -322,15 +324,15 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     let file = this.uploadingFiles.find((req) => req.id === fileId);
 
     /**
-     * Meta data of the first chunk includes additional information
+     * Metadata of the first chunk includes additional information
      */
     if ( !file ) {
       /**
        * Create Buffer for file data
        */
-      const fileData = Buffer.alloc(fileChunk.length, 0);
+      const fileData = Buffer.alloc(fileChunk.length + chunkSlice);
 
-      fileChunk.copy(fileData, 0);
+      fileChunk.copy(fileData, chunkSlice);
 
       /**
        * Create new file object
@@ -351,13 +353,19 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       if (file.uploadingWaitingTimeoutId) {
         clearTimeout(file.uploadingWaitingTimeoutId);
       }
-
       /**
        * Push file data
        */
-      const fileData = Buffer.concat([file.file, Buffer.alloc(fileChunk.length)]);
+      let fileData;
 
-      fileChunk.copy(fileData, file.file.length);
+      if (file.file.length < chunkSlice + fileChunk.length) {
+        fileData = Buffer.alloc(chunkSlice + fileChunk.length);
+        file.file.copy(fileData);
+        fileChunk.copy(fileData, chunkSlice);
+      } else {
+        fileData = file.file;
+        fileChunk.copy(fileData, chunkSlice);
+      }
 
       file.file = fileData;
     }

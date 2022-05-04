@@ -201,7 +201,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   private readonly reconnectionTimeout = 5000;
 
   /**
-   * How many time we should attempt reconnection
+   * How much time we should attempt reconnection
    */
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
   private reconnectionAttempts = 5;
@@ -338,20 +338,21 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
-    const chunk = file.fileData.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
+    const chunkOffset = chunkNumber * this.bufferLimit;
+    const chunk = file.fileData.slice( chunkOffset, chunkOffset + this.bufferLimit );
 
     /**
      * Getting info converted to binary type, which includes info about chunk number and chunk size
      */
-    const additionalData = this.makeDataAboutChunk(chunkNumber, chunk.length);
+    const chunkInfo = this.makeDataAboutChunk(chunkNumber, chunk.length, chunkOffset);
 
     /**
      * Unite meta with file data
      */
-    const data = Buffer.concat([additionalData, chunk]);
+    const data = Buffer.concat([chunkInfo, chunk]);
 
     /**
-     * If there are more then 5 attempts to send chunk, remove uploading file
+     * If there are more as 5 attempts to send chunk, remove uploading file
      */
     if ( file.resendTimes > this.reconnectionAttempts ) {
       /**
@@ -437,13 +438,18 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   }
 
   /**
-   * Create meta data for chunk, in this case it includes number of sending chunk and size of file data
+   * Create metadata for chunk, in this case it includes number of sending chunk and size of file data
    *
    * @param chunkNumber - number of sending chunk
    * @param size - length of file data in chunk
+   * @param chunkOffset - slice of chunk in buffer
    */
-  private makeDataAboutChunk(chunkNumber: number, size: number): Buffer {
+  private makeDataAboutChunk(chunkNumber: number, size: number, chunkOffset: number): Buffer {
     const sizeForMetaData = 4;
+
+    const bufferChunkOffset = Buffer.alloc(sizeForMetaData);
+
+    bufferChunkOffset.writeInt32BE(chunkOffset);
 
     const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
 
@@ -453,7 +459,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
     bufferSize.writeInt32BE(size);
 
-    return Buffer.concat([bufferChunkNumber, bufferSize]);
+    return Buffer.concat([bufferChunkNumber, bufferSize, bufferChunkOffset]);
   }
 
   /**
@@ -562,7 +568,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       }
 
       /**
-       * If we found requests and we have cb we do cb function
+       * If we found requests, and we have cb we do cb function
        */
       if (request && typeof request.cb == 'function') {
         request.cb(message.payload);
