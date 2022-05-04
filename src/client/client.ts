@@ -81,7 +81,7 @@ interface FileToUpload<MessagePayload> {
   /**
    * Chunks to send
    */
-  chunks: Buffer;
+  fileData: Buffer;
 
   /**
    * Timeout id of resending chunks
@@ -252,7 +252,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        */
       this.uploadingFiles.push({
         id: fileId,
-        chunks: file,
+        fileData: file,
         cb: callback,
         resendTimes: 0,
       });
@@ -338,7 +338,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
-    const chunk = file.chunks.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
+    const chunk = file.fileData.slice( chunkNumber * this.bufferLimit, this.bufferLimit + this.bufferLimit * chunkNumber );
 
     /**
      * Getting info converted to binary type, which includes info about chunk number and chunk size
@@ -402,7 +402,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
      */
 
     const percentMultiplier = 100;
-    const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.chunks.length / this.bufferLimit) * percentMultiplier);
+    const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.fileData.length / this.bufferLimit) * percentMultiplier);
 
     this.log('File ' + fileId + ' uploaded on ' + percent + '%');
 
