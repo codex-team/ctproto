@@ -339,12 +339,14 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
     const chunkOffset = chunkNumber * this.bufferLimit;
-    const chunk = file.fileData.slice( chunkOffset, chunkOffset + this.bufferLimit );
+    const dataOfFile = file.fileData.slice( chunkOffset, chunkOffset + this.bufferLimit );
+    const chunk = Buffer.alloc(this.bufferLimit, 0);
 
+    dataOfFile.copy(chunk, 0);
     /**
      * Getting info converted to binary type, which includes info about chunk number and chunk size
      */
-    const chunkInfo = this.makeDataAboutChunk(chunkNumber, chunk.length, chunkOffset);
+    const chunkInfo = this.makeDataAboutChunk(chunkNumber, chunk.length);
 
     /**
      * Unite meta with file data
@@ -442,14 +444,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    *
    * @param chunkNumber - number of sending chunk
    * @param size - length of file data in chunk
-   * @param chunkOffset - slice of chunk in buffer
    */
-  private makeDataAboutChunk(chunkNumber: number, size: number, chunkOffset: number): Buffer {
+  private makeDataAboutChunk(chunkNumber: number, size: number): Buffer {
     const sizeForMetaData = 4;
-
-    const bufferChunkOffset = Buffer.alloc(sizeForMetaData);
-
-    bufferChunkOffset.writeInt32BE(chunkOffset);
 
     const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
 
@@ -459,7 +456,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
 
     bufferSize.writeInt32BE(size);
 
-    return Buffer.concat([bufferChunkNumber, bufferSize, bufferChunkOffset]);
+    return Buffer.concat([bufferChunkNumber, bufferSize]);
   }
 
   /**

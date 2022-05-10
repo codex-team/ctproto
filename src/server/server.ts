@@ -300,19 +300,19 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const fileIdLength = 10;
     const chunkNumberOffset = 10;
     const sizeOffset = 14;
-    const chunkSliceOffset = 18;
-    const chunkSliceDataLength = 4;
+    const sizeDataLength = 4;
 
     const fileId = message.slice(0, fileIdLength).toString();
     const chunkNumber = message.readInt32BE(chunkNumberOffset);
     const size = message.readInt32BE(sizeOffset);
-    const chunkSlice = message.readInt32BE(chunkSliceOffset);
 
     /**
      * Getting file data
      */
-    const dataOffset = chunkSliceOffset + chunkSliceDataLength;
+    const dataOffset = sizeOffset + sizeDataLength;
     const fileChunk = message.slice(dataOffset, dataOffset + size);
+
+    console.log(fileChunk)
 
     /**
      * Parsing payload message in buffer message
@@ -320,6 +320,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const strPayload = message.slice(dataOffset + size).toString();
 
     const payload = JSON.parse(strPayload);
+
+    const chunkOffset = size * chunkNumber;
 
     let file = this.uploadingFiles.find((req) => req.id === fileId);
 
@@ -330,9 +332,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Create Buffer for file data
        */
-      const fileData = Buffer.alloc(fileChunk.length + chunkSlice);
+      const fileData = Buffer.alloc(fileChunk.length + chunkOffset);
 
-      fileChunk.copy(fileData, chunkSlice);
+      fileChunk.copy(fileData, chunkOffset);
 
       /**
        * Create new file object, the first chunk has more info about file ( chunks, payload, type of request )
@@ -373,7 +375,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Update file data
        */
-      this.updateFileData(file, chunkSlice, fileChunk);
+      this.updateFileData(file, chunkOffset, fileChunk);
     }
 
     if ( !file ) {
