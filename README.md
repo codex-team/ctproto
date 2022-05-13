@@ -31,6 +31,10 @@ Example of a correct message:
 "{\"messageId\":\"qUw0SWTeJX\",\"type\":\"update-workspace\",\"payload\":{\"name\":\"Example\"}}"
 ```
 
+You can look at file transfer messages format:
+
+[/docs/file-transfer.md](./docs/file-transfer.md)
+
 ## Authorization
 
 The first message after establishing the connection should be the `authorize`. 
