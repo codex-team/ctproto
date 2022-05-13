@@ -109,6 +109,9 @@ const transport = new CTProtoServer({
   async onMessage(message) {
     // massage handling
   },
+  async onUploadMessage(fileMessage) {
+    // file message handling
+  }
 });
 ```
 
@@ -118,6 +121,7 @@ Where
 | -- | -- | -- |
 | `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<AuthData>_ | Method for authorization. See details below |
 | `onMessage` | _(message: NewMessage) => Promise<void | object>_ | Message handler. See details below |
+| `onUploadMessage` | _(fileMessage: NewMessage) => Promise<void | object>_ | Upload message handler. See details below |
 
 and you can set any [ws.Server](https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback) options.
 
@@ -145,6 +149,12 @@ transport
 This callback will be fired when the new message accepted from the client. It will get a whole message object as a param.
 
 You can handle a message and optionally you can return a value (`object`) to respond on this message. 
+
+### onUploadMessage()
+
+This callback will be fired when the file is fully uploaded from the client. It will get a whole file request object as a param.
+
+You can handle a file transfer message and optionally you can return a value (`object`) to respond on this uploading.
 
 ## Client
 
@@ -209,6 +219,7 @@ client
         // do something with the response payload
     });
 ```
+
 Where
 
 | parameter | type | description |
@@ -221,9 +232,41 @@ Example
 
 ```ts
 client
-    .send('sum-of-numbers', {
+    .send('sum-of-number', {
         a: 10,
         b: 11,
+    })
+    .then((responsePayload) => {
+        console.log('Response: ', responsePayload);
+    });
+```
+
+You can send a file and get uploading response:
+
+```ts
+client
+    .sendFile(type, file, payload)
+    .then((responsePayload) => {
+        // do something with the response payload
+    });
+```
+
+Where
+
+
+| parameter         | type                        | description           |
+|-------------------|-----------------------------|-----------------------|
+| `type`            | ApiUploadRequest['type']    | Type of file request. |
+| `file`            | Buffer                      | File data.            |
+| `payload`         | ApiUploadRequest['payload'] | Request payload.      |
+ | `responsePayload` | ApiResponse['payload']      | Response payload.     |
+
+Example
+
+```ts
+client
+    .sendFile('upload-example-file', file, {
+        fileName: 'MyFile.txt',
     })
     .then((responsePayload) => {
         console.log('Response: ', responsePayload);
@@ -234,13 +277,14 @@ client
 
 If you're using TS, you will need to create interfaces describing some CTProto objects: `AuthorizeMessagePayload`, `AuthorizeResponsePayload`, `ApiRequest`, `ApiResponse`, `ApiUpdate`.
 
-| Type | Description | Example |
-| ---- | ----------- | --------|
-| `AuthorizeMessagePayload` | Payload of your `authorize` message. See [Authorization](#authorization). | Example: [/example/types/requests/authorize.ts](./example/types/requests/authorize.ts) |
+| Type                       | Description                                                                               | Example |
+|----------------------------|-------------------------------------------------------------------------------------------| --------|
+| `AuthorizeMessagePayload`  | Payload of your `authorize` message. See [Authorization](#authorization).                 | Example: [/example/types/requests/authorize.ts](./example/types/requests/authorize.ts) |
 | `AuthorizeResponsePayload` | Payload of the response on your `authorize` message. See [Authorization](#authorization). | Example: [/example/types/responses/authorize.ts](./example/types/responses/authorize.ts) |
-| `ApiRequest` | All available messages that can be sent from the Client to the Server | Example: [/example/types/index.ts](./example/types/index.ts) | 
-| `ApiResponse` | All available messages that can be sent by the Server in response to Client requests | Example: [/example/types/index.ts](./example/types/index.ts) |
-| `ApiUpdate` | All available messages that can be sent by the Server to the Client | Example: [/example/types/index.ts](./example/types/index.ts) |
+| `ApiRequest`               | All available messages that can be sent from the Client to the Server                     | Example: [/example/types/index.ts](./example/types/index.ts) | 
+| `ApiUploadRequest`         | All available file transfer messages that can be sent from the Client to the Server       | Example: [/example/types/index.ts](./example/types/index.ts) | 
+| `ApiResponse`              | All available messages that can be sent by the Server in response to Client requests      | Example: [/example/types/index.ts](./example/types/index.ts) |
+| `ApiUpdate`                | All available messages that can be sent by the Server to the Client                       | Example: [/example/types/index.ts](./example/types/index.ts) |
 
 All examples see at the [/example](./example) directory. 
 
