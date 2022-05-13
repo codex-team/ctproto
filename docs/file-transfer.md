@@ -1,36 +1,14 @@
 # File transfer structure
 
-## Client side
+Every sending file has unique file id, it is divided into several chunks. 
 
-To send file you can use method `sendFile(type, file, payload)`
-
-| Parameter | Role                             |
-|-----------|----------------------------------|
- | type      | Request type to handle on server |
- | file      | File to send                     |
- | payload   | Any data with file               |
-
-`sendFile` does the following list of things:
-
-1. Generate unique file id
-2. Calculate number of chunk to send
-3. Create object `UploadingFiles` to save file data
-4. Create payload for the first chunk
-5. Call method `sendChunk` with the first chunk
-
-Method `sendChunk` has the following parameters
-
-| Parameter   | Role                            |
-|-------------|---------------------------------|
-| file        | File, which chunk needs to send |
-| chunkNumber | Number of chunk to send         |
-| message     | Message                         |
+Chunk has a binary structure `Buffer`
 
 ## Chunk structure
 
-| 10 bytes  | 4 bytes       | 4 bytes            | 4 bytes      | n bytes   | remaining bytes |
-|-----------|---------------|--------------------|--------------|-----------|-----------------|
- | file id   | chunk number  | file data size (n) | chunk offset | file data | message         |
+| 10 bytes  | 4 bytes       | 4 bytes            | n bytes    | remaining bytes |
+|-----------|---------------|--------------------|------------|-----------------|
+ | file id   | chunk number  | file data size (n) | file data  | message         |
 
 * **file id** - unique upload file ID
 * **chunk number** - number in queue of sending chunk 
@@ -39,7 +17,7 @@ Method `sendChunk` has the following parameters
 * **file data** - part of file data
 * **message** - file transport message payload
 
-Example of the thirst chunk message structure: 
+Example of the chunk message structure: 
 ```json
 {
   "type": "upload-example-file",
@@ -51,7 +29,7 @@ Example of the thirst chunk message structure:
 }
 ```
 
-Example of remaining chunks messages:
+But it might look like this, remaining parameters are not required:
 ```json
 {
   "messageId": "KiO4dInCZz"
