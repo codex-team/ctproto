@@ -13,7 +13,6 @@ Chunk has a binary structure `Buffer`
 * **file id** - unique upload file ID
 * **chunk number** - number in queue of sending chunk 
 * **file data size** - how many bytes is the file data
-* **chunk offset** - chunk byte shift in sending file
 * **file data** - part of file data
 * **message** - file transport message payload
 
