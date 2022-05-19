@@ -312,8 +312,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const dataOffset = sizeOffset + sizeDataLength;
     const fileChunk = message.slice(dataOffset, dataOffset + size);
 
-    console.log(fileChunk)
-
     /**
      * Parsing payload message in buffer message
      */
