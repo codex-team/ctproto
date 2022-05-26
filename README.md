@@ -121,11 +121,11 @@ const transport = new CTProtoServer({
 
 Where 
 
-| option | type | description |
-| -- | -- | -- |
-| `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<AuthData>_ | Method for authorization. See details below |
-| `onMessage` | _(message: NewMessage) => Promise<void | object>_ | Message handler. See details below |
-| `onUploadMessage` | _(fileMessage: NewMessage) => Promise<void | object>_ | Upload message handler. See details below |
+| option | type                                                             | description                                |
+| ------ |------------------------------------------------------------------|--------------------------------------------|
+| `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<_AuthData>_ | Method for authorization. See details below |
+| `onMessage` | _(message: NewMessage) => Promise<_void I object_>_              | Message handler. See details below              |
+| `onUploadMessage` | _(fileMessage: NewMessage) => Promise<_void I object_>_          | Upload message handler. See details below  |
 
 and you can set any [ws.Server](https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback) options.
 
