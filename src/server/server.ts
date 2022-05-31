@@ -319,10 +319,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
 
     const payload = JSON.parse(strPayload);
 
-    console.log(chunkNumber, size)
-
-    console.log(payload)
-
     const chunkOffset = size * chunkNumber;
 
     let file = this.uploadingFiles.find((req) => req.id === fileId);

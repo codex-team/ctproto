@@ -54,16 +54,15 @@ export default class MessageFactory {
    * @param message - message to send with chunk
    */
   public static packChunk(fileId: string, chunkNumber: number, size: number, bufData: Uint8Array, message: string): Uint8Array {
-
     const enc = new TextEncoder();
 
     const bufFileId = enc.encode(fileId);
 
     const bufMessage = enc.encode(message);
 
-    let bufInfo = new Uint32Array([chunkNumber, size])
+    const bufInfo = new Uint32Array([chunkNumber, size]);
 
-    let bufChunkInfo = new Uint8Array(bufInfo.buffer)
+    const bufChunkInfo = new Uint8Array(bufInfo.buffer);
 
     const chunk = new Uint8Array(bufFileId.length + bufChunkInfo.length + bufData.length + bufMessage.length);
 
@@ -73,7 +72,7 @@ export default class MessageFactory {
 
     chunk.set(bufData, bufFileId.length + bufChunkInfo.length);
 
-    chunk.set(bufMessage, bufFileId.length + bufChunkInfo.length + bufData.length)
+    chunk.set(bufMessage, bufFileId.length + bufChunkInfo.length + bufData.length);
 
     return chunk;
   }

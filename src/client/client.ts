@@ -240,7 +240,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         resolve(response);
       };
 
-      let fileData = new Uint8Array(file);
+      const fileData = new Uint8Array(file);
 
       const fileId = MessageFactory.createFileId();
 
@@ -332,14 +332,14 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param message - additional info for chunk
    */
   private sendChunk(file: FileToUpload<ApiResponse['payload']>, chunkNumber: number, message: string): void {
-
     /**
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
     const chunkOffset = chunkNumber * this.chunkSize;
     const dataOfFile = file.fileData.slice( chunkOffset, chunkOffset + this.chunkSize );
-    let chunk = new Uint8Array(this.chunkSize);
-    chunk.set(dataOfFile)
+    const chunk = new Uint8Array(this.chunkSize);
+
+    chunk.set(dataOfFile);
 
     /**
      * If there are more as 5 attempts to send chunk, remove uploading file
