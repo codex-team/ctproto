@@ -303,8 +303,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const sizeDataLength = 4;
 
     const fileId = message.slice(0, fileIdLength).toString();
-    const chunkNumber = message.readInt32BE(chunkNumberOffset);
-    const size = message.readInt32BE(sizeOffset);
+    const chunkNumber = message.readInt32LE(chunkNumberOffset);
+    const size = message.readInt32LE(sizeOffset);
 
     /**
      * Getting file data
@@ -318,6 +318,10 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     const strPayload = message.slice(dataOffset + size).toString();
 
     const payload = JSON.parse(strPayload);
+
+    console.log(chunkNumber, size)
+
+    console.log(payload)
 
     const chunkOffset = size * chunkNumber;
 

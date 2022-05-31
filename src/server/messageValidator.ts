@@ -90,7 +90,7 @@ export default class MessageValidator {
     const sizeDataLength = 4;
 
     const fileId = message.slice(0, fileIdLength).toString();
-    const size = message.readInt32BE(sizeOffset);
+    const size = message.readInt32LE(sizeOffset);
 
     /**
      * Getting file data

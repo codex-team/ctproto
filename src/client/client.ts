@@ -81,7 +81,7 @@ interface FileToUpload<MessagePayload> {
   /**
    * Chunks to send
    */
-  fileData: Buffer;
+  fileData: Uint8Array;
 
   /**
    * Timeout id of resending chunks
@@ -188,7 +188,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * Limit for the chunk size in bytes
    */
-  private readonly bufferLimit = 10000;
+  private readonly chunkSize = 10000;
 
   /**
    * Reconnection tries Timeout
@@ -231,7 +231,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    */
   public async sendFile(
     type: ApiUploadRequest['type'],
-    file: Buffer,
+    file: ArrayBuffer,
     payload: ApiUploadRequest['payload']
 
   ): Promise<ApiResponse['payload']> {
@@ -240,28 +240,26 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
         resolve(response);
       };
 
+      let fileData = new Uint8Array(file);
+
       const fileId = MessageFactory.createFileId();
 
       /**
        * Calculate number of chunks
        */
-      const chunks = this.calculateChunksNumber(file);
+      const chunks = this.calculateChunksNumber(fileData);
+
+      const uploadingFile = {
+        id: fileId,
+        fileData: fileData,
+        cb: callback,
+        resendTimes: 0,
+      };
 
       /**
        * Create new uploading file to save data for file uploading
        */
-      this.uploadingFiles.push({
-        id: fileId,
-        fileData: file,
-        cb: callback,
-        resendTimes: 0,
-      });
-
-      const uploadingFile = this.getUploadingFileById(fileId);
-
-      if (!uploadingFile) {
-        throw new Error('File ' + fileId + ' has not found');
-      }
+      this.uploadingFiles.push(uploadingFile);
 
       const message = MessageFactory.createBufferPayload(type, payload, chunks);
 
@@ -338,20 +336,10 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
-    const chunkOffset = chunkNumber * this.bufferLimit;
-    const dataOfFile = file.fileData.slice( chunkOffset, chunkOffset + this.bufferLimit );
-    const chunk = Buffer.alloc(this.bufferLimit, 0);
-
-    dataOfFile.copy(chunk, 0);
-    /**
-     * Getting info converted to binary type, which includes info about chunk number and chunk size
-     */
-    const chunkInfo = this.makeDataAboutChunk(chunkNumber, chunk.length);
-
-    /**
-     * Unite meta with file data
-     */
-    const data = Buffer.concat([chunkInfo, chunk]);
+    const chunkOffset = chunkNumber * this.chunkSize;
+    const dataOfFile = file.fileData.slice( chunkOffset, chunkOffset + this.chunkSize );
+    let chunk = new Uint8Array(this.chunkSize);
+    chunk.set(dataOfFile)
 
     /**
      * If there are more as 5 attempts to send chunk, remove uploading file
@@ -365,7 +353,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       throw new Error('There is no response from server to ' + file.resendTimes + ' attempts to send chunk');
     }
 
-    const bufferMessage = MessageFactory.packChunk(file.id, data, message);
+    const bufferMessage = MessageFactory.packChunk(file.id, chunkNumber, chunk.length, chunk, message);
 
     if (!this.socket || this.socket.readyState !== this.socket.OPEN) {
       this.enqueuedBufferMessages.push({
@@ -405,7 +393,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
      */
 
     const percentMultiplier = 100;
-    const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.fileData.length / this.bufferLimit) * percentMultiplier);
+    const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.fileData.length / this.chunkSize) * percentMultiplier);
 
     this.log('File ' + fileId + ' uploaded on ' + percent + '%');
 
@@ -435,30 +423,9 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    *
    * @param file - file to send
    */
-  private calculateChunksNumber(file: Buffer): number {
-    return Math.ceil(file.length / this.bufferLimit);
+  private calculateChunksNumber(file: Uint8Array): number {
+    return Math.ceil(file.length / this.chunkSize);
   }
-
-  /**
-   * Create metadata for chunk, in this case it includes number of sending chunk and size of file data
-   *
-   * @param chunkNumber - number of sending chunk
-   * @param size - length of file data in chunk
-   */
-  private makeDataAboutChunk(chunkNumber: number, size: number): Buffer {
-    const sizeForMetaData = 4;
-
-    const bufferChunkNumber = Buffer.alloc(sizeForMetaData);
-
-    bufferChunkNumber.writeInt32BE(chunkNumber);
-
-    const bufferSize = Buffer.alloc(sizeForMetaData);
-
-    bufferSize.writeInt32BE(size);
-
-    return Buffer.concat([bufferChunkNumber, bufferSize]);
-  }
-
   /**
    * Create socket instance and open the connections
    */

@@ -20,22 +20,6 @@ And you can test file uploading.
     uploadExampleFile(file, fileName);
   }
 
-  /**
-   * Convert data from arrayBuffer to Buffer
-   *
-   * @param ab - arrayBuffer data
-   *
-   * @return {Buffer} Converted Buffer data
-   */
-  function arrayBufferToBufferCycle(ab) {
-    let buffer = new Buffer(ab.byteLength);
-    let view = new Uint8Array(ab);
-    for (let i = 0; i < buffer.length; ++i) {
-      buffer[i] = view[i];
-    }
-    return buffer;
-  }
-
     /**
      * Get elements for uploading files
      */
@@ -53,8 +37,7 @@ And you can test file uploading.
 
       fileReader.onload = (event) => {
         let arrayBufferData = event.target.result;
-        let buf = arrayBufferToBufferCycle(arrayBufferData)
-        sendFile(buf, file.files[0].name);
+        sendFile(arrayBufferData, file.files[0].name);
   }
   });
 </script>
