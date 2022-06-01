@@ -345,23 +345,21 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       if (chunkNumber === 0) {
         file = {
-
-        }
-        this.uploadingFiles.push( { id: fileId,
+          id: fileId,
           uploadedChunks: [],
           file: fileData,
           chunks: payload.chunks,
           payload: payload.payload,
           type: payload.type,
-        } );
+        };
       } else {
-        this.uploadingFiles.push( { id: fileId,
+        file = {
+          id: fileId,
           uploadedChunks: [],
           file: fileData,
-        } );
+        };
+        this.uploadingFiles.push(file);
       }
-
-      file = this.uploadingFiles.find((req) => req.id === fileId);
     } else {
       /**
        * Clear timeout, if chunk comes
@@ -385,10 +383,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       this.updateFileData(file, chunkOffset, fileChunk);
     }
 
-    if ( !file ) {
-      return;
-    }
-
+    /**
+     * Set info, that chunk is uploaded
+     */
     file.uploadedChunks[chunkNumber] = true;
 
     if (this.isFileFullyUploaded(file)) {
