@@ -16,10 +16,6 @@ And you can test file uploading.
 <script type="module">
   import { uploadExampleFile } from './send-file';
 
-  const sendFile = (file, fileName) => {
-    uploadExampleFile(file, fileName);
-  }
-
     /**
      * Get elements for uploading files
      */
@@ -30,14 +26,6 @@ And you can test file uploading.
      * Creat onClick event for file uploading
      */
     upload.addEventListener('click', () => {
-
-      let fileReader = new FileReader();
-      fileReader.readAsArrayBuffer(file.files[0]);
-
-
-      fileReader.onload = (event) => {
-        let arrayBufferData = event.target.result;
-        sendFile(arrayBufferData, file.files[0].name);
-  }
+      uploadExampleFile(file.files[0], file.files[0].name);
   });
 </script>

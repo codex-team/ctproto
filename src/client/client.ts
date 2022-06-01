@@ -86,7 +86,7 @@ interface FileToUpload<MessagePayload> {
   /**
    * Timeout id of resending chunks
    */
-  responseWaitingTimeoutId?: NodeJS.Timeout;
+  responseWaitingTimeoutId?: any;
 
   /**
    * Number of attempts to send a chunk
@@ -231,16 +231,18 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    */
   public async sendFile(
     type: ApiUploadRequest['type'],
-    file: ArrayBuffer,
+    file: File,
     payload: ApiUploadRequest['payload']
 
   ): Promise<ApiResponse['payload']> {
+    const bufFile = await file.arrayBuffer();
+
     return new Promise( resolve => {
       const callback = (response: ApiResponse['payload']): void => {
         resolve(response);
       };
 
-      const fileData = new Uint8Array(file);
+      const fileData = new Uint8Array(bufFile);
 
       const fileId = MessageFactory.createFileId();
 
@@ -261,7 +263,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
        */
       this.uploadingFiles.push(uploadingFile);
 
-      const message = MessageFactory.createBufferPayload(type, payload, chunks);
+      const message = MessageFactory.createChunkMessage(type, payload, chunks);
 
       const chunkNumber = 0;
 
@@ -365,7 +367,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       this.socket.send(bufferMessage);
 
       /**
-       * Create timeout, which will work in case of no respond from server
+       * Create timeout, which will resend chunk in case of no respond from server
        */
       file.responseWaitingTimeoutId = setTimeout( () => {
         this.sendChunk(file, chunkNumber, message);
@@ -406,7 +408,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       clearTimeout(uploadingFile.responseWaitingTimeoutId);
     }
 
-    this.sendChunk(uploadingFile, chunkNumber + 1, MessageFactory.createBufferPayload());
+    this.sendChunk(uploadingFile, chunkNumber + 1, MessageFactory.createChunkMessage());
   }
 
   /**

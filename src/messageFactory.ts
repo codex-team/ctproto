@@ -35,7 +35,7 @@ export default class MessageFactory {
    * @param payload - message for chunk
    * @param chunks - number of chunks
    */
-  public static createBufferPayload<MessagePayload>(type?: string, payload?: MessagePayload, chunks?: number): string {
+  public static createChunkMessage<MessagePayload>(type?: string, payload?: MessagePayload, chunks?: number): string {
     return JSON.stringify({
       type,
       payload,
