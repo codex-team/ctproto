@@ -13,9 +13,8 @@ import {
 import ClientsList from './clientsList';
 import MessageFactory, { chunkSizeOffset, idLength, numberOfChunkOffset, sizeChunkDataLength } from './../messageFactory';
 import MessageValidator from './messageValidator';
-import { FileRequest, UploadingFile } from '../../types/file';
+import { UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
-import * as fs from "fs";
 
 /**
  * Available options for the CTProtoServer
@@ -345,6 +344,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Create new file object, the first chunk has more info about file ( chunks, payload, type of request )
        */
       if (chunkNumber === 0) {
+        file = {
+
+        }
         this.uploadingFiles.push( { id: fileId,
           uploadedChunks: [],
           file: fileData,
