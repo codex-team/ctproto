@@ -65,29 +65,27 @@ export default class MessageFactory {
    * @param fileId - file id
    * @param chunkNumber - number of chunk
    * @param size - file data size
-   * @param bufData - buffer of file
+   * @param fileData - buffer of file
    * @param message - message to send with chunk
    */
-  public static packChunk(fileId: string, chunkNumber: number, size: number, bufData: Uint8Array, message: string): Uint8Array {
+  public static packChunk(fileId: string, chunkNumber: number, size: number, fileData: Uint8Array, message: string): Uint8Array {
     const enc = new TextEncoder();
 
     const bufFileId = enc.encode(fileId);
 
     const bufMessage = enc.encode(message);
 
-    const chunkInfo = new Uint32Array([chunkNumber, size]);
+    const bufChunkInfo = new Uint8Array((new Uint32Array([chunkNumber, size])).buffer);
 
-    const bufChunkInfo = new Uint8Array(chunkInfo.buffer);
-
-    const chunk = new Uint8Array(bufFileId.length + bufChunkInfo.length + bufData.length + bufMessage.length);
+    const chunk = new Uint8Array(bufFileId.length + bufChunkInfo.length + fileData.length + bufMessage.length);
 
     chunk.set(bufFileId);
 
     chunk.set(bufChunkInfo, bufFileId.length);
 
-    chunk.set(bufData, bufFileId.length + bufChunkInfo.length);
+    chunk.set(fileData, bufFileId.length + bufChunkInfo.length);
 
-    chunk.set(bufMessage, bufFileId.length + bufChunkInfo.length + bufData.length);
+    chunk.set(bufMessage, bufFileId.length + bufChunkInfo.length + fileData.length);
 
     return chunk;
   }
