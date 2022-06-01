@@ -1,7 +1,7 @@
 import ws from 'ws';
 import { CloseEventCode } from './closeEvent';
 import MessageFactory from './../messageFactory';
-import { NewMessage, ResponseMessage as IResponseMessage } from './../../types';
+import { FileTransferResponseMessage as IFileTransferResponseMessage, NewMessage, ResponseMessage as IResponseMessage } from './../../types';
 
 /**
  * Represents the connected client
@@ -10,7 +10,7 @@ import { NewMessage, ResponseMessage as IResponseMessage } from './../../types';
  * @template ApiResponse - the type describing all available API response messages
  * @template ApiOutgoingMessage - all available outgoing messages
  */
-export default class Client<AuthData, ResponseMessage extends IResponseMessage<unknown>, OutgoingMessage extends NewMessage<unknown>> {
+export default class Client<AuthData, ResponseMessage extends IResponseMessage<unknown>, OutgoingMessage extends NewMessage<unknown>, FileTransferResponseMessage extends IFileTransferResponseMessage<unknown>> {
   /**
    * Store 'ws' socket of a client.
    * Allows us to send him messages or break the connection
@@ -53,6 +53,17 @@ export default class Client<AuthData, ResponseMessage extends IResponseMessage<u
     this.socket.send(MessageFactory.respond(messageId, payload));
   }
 
+  /**
+   * Sends a message as a response to file transfer
+   *
+   * @param fileId - id of uploading file
+   * @param isUploaded - is file fully uploaded
+   * @param chunkNumber - number of uploaded chunk
+   * @param payload - data to send
+   */
+  public respondFileTransferMessage(fileId: string, isUploaded: boolean, chunkNumber: number, payload: FileTransferResponseMessage['payload']): void {
+    this.socket.send(MessageFactory.respondFileTransferMessage(fileId, isUploaded, chunkNumber, payload));
+  }
   /**
    * Closes connection of selected clients
    *

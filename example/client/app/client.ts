@@ -1,14 +1,14 @@
 import { CTProtoClient } from '../../../build/src';
 // import { CTProtoClient } from 'ctproto';
 import { authorizeRequestPayloadMock } from '../../mocks/authorizeRequestPayload';
-import { ApiRequest, ApiResponse, ApiUpdate } from '../../types';
+import { ApiRequest, ApiResponse, ApiUpdate, ApiUploadRequest, ApiUploadResponse } from '../../types';
 import { AuthorizeMessagePayload } from '../../types/requests/authorize';
 import { AuthorizeResponsePayload } from '../../types/responses/authorize';
 
 /**
  * CTProtoClient example
  */
-export const client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate>({
+export const client = new CTProtoClient<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate, ApiUploadRequest, ApiUploadResponse>({
   apiUrl: 'ws://localhost:8080',
   authRequestPayload: authorizeRequestPayloadMock,
   onAuth: (data: AuthorizeResponsePayload) => {

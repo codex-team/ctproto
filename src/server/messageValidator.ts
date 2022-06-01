@@ -1,5 +1,5 @@
 import { MessageFormatError, MessageParseError } from './errors';
-import { idLength } from './../messageFactory';
+import { idLength, chunkSizeOffset, sizeChunkDataLength } from './../messageFactory';
 
 /**
  * Provides methods for validating message
@@ -62,8 +62,60 @@ export default class MessageValidator {
     /**
      * Check message id for validness
      */
-    if (!MessageValidator.isMessageIdValid(parsedMessage.messageId as string)) {
+    if (!MessageValidator.isIdValid(parsedMessage.messageId as string)) {
       throw new MessageFormatError('Invalid message id');
+    }
+  }
+
+  /**
+   * Check if passed message fits the protocol format.
+   * Will throw an error if case of problems.
+   * If everything is ok, return void
+   *
+   * @param message - buffer got from client by socket
+   */
+  public static validateBufferMessage(message: unknown): void {
+    /**
+     * Check for message type
+     */
+    if (!(message instanceof Buffer)) {
+      throw new MessageParseError('Unsupported data');
+    }
+
+    /**
+     * Parsing meta data from buffer message
+     */
+    const fileIdLength = idLength;
+    const sizeOffset = chunkSizeOffset;
+    const sizeDataLength = sizeChunkDataLength;
+
+    const fileId = message.slice(0, fileIdLength).toString();
+    const size = message.readInt32LE(sizeOffset);
+
+    /**
+     * Getting file data
+     */
+    const dataOffset = sizeOffset + sizeDataLength;
+
+    /**
+     * Parsing payload message in buffer message
+     */
+    const strPayload = message.slice(dataOffset + size).toString();
+
+    /**
+     * Check for JSON validness
+     */
+    try {
+      JSON.parse(strPayload);
+    } catch (parsingError) {
+      throw new MessageParseError((parsingError as Error).message);
+    }
+
+    /**
+     * Check file id for validness
+     */
+    if (!MessageValidator.isIdValid(fileId)) {
+      throw new MessageFormatError('Invalid file id');
     }
   }
 
@@ -73,7 +125,7 @@ export default class MessageValidator {
    *
    * @param messageId - id to check
    */
-  private static isMessageIdValid(messageId: string): boolean {
+  private static isIdValid(messageId: string): boolean {
     if (messageId.length !== idLength) {
       return false;
     }

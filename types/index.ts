@@ -1,11 +1,17 @@
 import {
   Message,
   NewMessage,
-  ResponseMessage
+  ResponseMessage,
+  FileTransferMessage,
+  NewFileTransferMessage,
+  FileTransferResponseMessage
 } from './message';
 
 export {
   Message,
   NewMessage,
-  ResponseMessage
+  ResponseMessage,
+  FileTransferMessage,
+  NewFileTransferMessage,
+  FileTransferResponseMessage
 };

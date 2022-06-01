@@ -3,10 +3,18 @@ import ws from 'ws';
 import { CriticalError } from './errors';
 import { CloseEventCode } from './closeEvent';
 import Client from './client';
-import { NewMessage, ResponseMessage } from '../../types';
+import {
+  FileTransferMessage,
+  FileTransferResponseMessage,
+  NewFileTransferMessage,
+  NewMessage,
+  ResponseMessage
+} from '../../types';
 import ClientsList from './clientsList';
-import MessageFactory from './../messageFactory';
+import MessageFactory, { chunkSizeOffset, idLength, numberOfChunkOffset, sizeChunkDataLength } from './../messageFactory';
 import MessageValidator from './messageValidator';
+import { Buffer } from 'buffer';
+import FileTransport, { UploadingFile } from './fileTransport';
 
 /**
  * Available options for the CTProtoServer
@@ -16,21 +24,24 @@ import MessageValidator from './messageValidator';
  * @template ApiRequest - the type described all available API request messages
  * @template ApiResponse - the type described all available API response messages
  */
-export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>> extends ws.ServerOptions{
+export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>, ApiUploadRequest extends FileTransferMessage<unknown>, ApiUploadResponse extends FileTransferResponseMessage<unknown>> extends ws.ServerOptions{
   /**
    * Allows overriding server host
+   *
    * @example '0.0.0.0'
    */
   host?: string;
 
   /**
    * Allows overriding server port
+   *
    * @example 8080
    */
   port?: number;
 
   /**
    * Allows overriding connection endpoint
+   *
    * @example '/api'
    */
   path?: string;
@@ -52,6 +63,14 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
    * @returns optionally can return any data to respond to client
    */
   onMessage: (message: ApiRequest) => Promise<void | ApiResponse['payload']>;
+
+  /**
+   * Method for uploading messages
+   *
+   * @param uploadMessage - file message data
+   * @returns optionally can return any data to respond to client
+   */
+  onUploadMessage: (uploadMessage: ApiUploadRequest) => Promise<void | ApiUploadResponse['payload']>;
 
   /**
    * Allows to disable validation/authorization and other warning messages
@@ -76,7 +95,7 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
  * @template ApiResponse - the type describing all available API response messages
  * @template ApiUpdate - all available outgoing messages
  */
-export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>> {
+export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>, ApiUploadRequest extends NewFileTransferMessage<unknown>, ApiUploadResponse extends FileTransferResponseMessage<unknown>> {
   /**
    * Manager of currently connected clients
    * Allows to find, send and other manipulations.
@@ -90,9 +109,19 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   private readonly wsServer: ws.Server;
 
   /**
+   * Files which are uploading to the server at this time
+   */
+  private uploadingFiles: Array<UploadingFile>;
+
+  /**
+   * Time between chunk uploading
+   */
+  private readonly chunkWaitingTimeout = 15000;
+
+  /**
    * Configuration options passed on Transport initialization
    */
-  private options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse>;
+  private readonly options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest, ApiUploadResponse>;
 
   /**
    * Constructor
@@ -100,12 +129,13 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param options - Transport options
    * @param WebSocketsServer - allows to override the 'ws' dependency. Used for mocking it in tests.
    */
-  constructor(options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse>, WebSocketsServer?: ws.Server) {
+  constructor(options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest, ApiUploadResponse>, WebSocketsServer?: ws.Server) {
     /**
      * Do not save clients in ws.clients property
      * because we will use own Map (this.ClientsList)
      */
     options.clientTracking = false;
+    this.uploadingFiles = [];
     this.options = options;
     this.wsServer = WebSocketsServer || new ws.Server(this.options, () => {
       this.log(`Server is running at ws://${options.host || 'localhost'}:${options.port}`);
@@ -153,7 +183,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    */
   private async onmessage(socket: ws, data: ws.Data): Promise<void> {
     try {
-      MessageValidator.validateMessage(data as string);
+      if (!this.isFileTransportMessage(data)) {
+        await MessageValidator.validateMessage(data);
+      } else {
+        await MessageValidator.validateBufferMessage(data);
+      }
     } catch (error) {
       const errorMessage = (error as Error).message;
 
@@ -168,17 +202,24 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       return;
     }
 
-    const message = JSON.parse(data as string);
     const client = this.clients.find((c) => c.socket === socket).current();
 
     try {
       if (client === undefined) {
-        this.handleFirstMessage(socket, message);
+        const message = JSON.parse(data as string);
+
+        await this.handleFirstMessage(socket, message);
       } else {
-        this.handleAuthorizedMessage(client, message);
+        if (data instanceof Buffer) {
+          await this.handleBufferMessage(client, data);
+        } else {
+          const message = JSON.parse(data as string);
+
+          await this.handleAuthorizedMessage(client, message);
+        }
       }
     } catch (error) {
-      this.log(`Error while processing a message: ${(error as Error).message}`, message);
+      this.log(`Error while processing a message: ${(error as Error).message}`, data);
     }
   }
 
@@ -213,12 +254,22 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   }
 
   /**
+   * Check is data file transport message
+   *
+   * @param data - incoming data
+   */
+  private isFileTransportMessage(data: unknown): boolean {
+    return data instanceof Buffer;
+  }
+
+
+  /**
    * Process not-first message.
    *
    * @param client - connected client
    * @param message - accepted message
    */
-  private async handleAuthorizedMessage(client: Client<AuthData, ApiResponse, ApiUpdate>, message: ApiRequest): Promise<void> {
+  private async handleAuthorizedMessage(client: Client<AuthData, ApiResponse, ApiUpdate, ApiUploadResponse>, message: ApiRequest): Promise<void> {
     if (message.type == 'authorize') {
       return;
     }
@@ -240,6 +291,135 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     } catch (error) {
       this.log('Internal error while processing a message: ', (error as Error).message);
     }
+  }
+
+  /**
+   * Process buffer message.
+   *
+   * @param client - connected client
+   * @param message - accepted message
+   */
+  private async handleBufferMessage(client: Client<AuthData, ApiResponse, ApiUpdate, ApiUploadResponse>, message: Buffer): Promise<void> {
+    /**
+     * Parsing meta data from buffer message
+     */
+    const fileIdLength = idLength;
+    const chunkNumberOffset = numberOfChunkOffset;
+    const sizeOffset = chunkSizeOffset;
+    const sizeDataLength = sizeChunkDataLength;
+
+    const fileId = message.slice(0, fileIdLength).toString();
+    const chunkNumber = message.readInt32LE(chunkNumberOffset);
+    const size = message.readInt32LE(sizeOffset);
+
+    /**
+     * Getting file data
+     */
+    const dataOffset = sizeOffset + sizeDataLength;
+    const fileChunk = message.slice(dataOffset, dataOffset + size);
+
+    /**
+     * Parsing payload message in buffer message
+     */
+    const strPayload = message.slice(dataOffset + size).toString();
+
+    const payload = JSON.parse(strPayload);
+
+    const chunkOffset = size * chunkNumber;
+
+    let file = this.uploadingFiles.find((req) => req.id === fileId);
+
+    /**
+     * Metadata of the first chunk includes additional information
+     */
+    if ( !file ) {
+      /**
+       * Create Buffer for file data
+       */
+      const fileData = Buffer.alloc(fileChunk.length + chunkOffset);
+
+      fileChunk.copy(fileData, chunkOffset);
+
+      /**
+       * Create new file object, the first chunk has more info about file ( chunks, payload, type of request )
+       */
+      if (chunkNumber === 0) {
+        file = {
+          id: fileId,
+          uploadedChunks: [],
+          file: fileData,
+          chunks: payload.chunks,
+          payload: payload.payload,
+          type: payload.type,
+        };
+      } else {
+        file = {
+          id: fileId,
+          uploadedChunks: [],
+          file: fileData,
+        };
+      }
+      this.uploadingFiles.push(file);
+    } else {
+      /**
+       * Clear timeout, if chunk comes
+       */
+      if (file.uploadingWaitingTimeoutId) {
+        clearTimeout(file.uploadingWaitingTimeoutId);
+      }
+
+      /**
+       * In case if the first chunk comes not first, push more file data to uploading file object
+       */
+      if (chunkNumber === 0) {
+        file.chunks = payload.chunks;
+        file.type = payload.type;
+        file.payload = payload.payload;
+      }
+
+      /**
+       * Update file data
+       */
+      FileTransport.updateFileData(file, chunkOffset, fileChunk);
+    }
+
+    /**
+     * Set info, that chunk is uploaded
+     */
+    file.uploadedChunks[chunkNumber] = true;
+
+    const isFileUploaded = FileTransport.isFileFullyUploaded(file);
+
+    let response;
+
+    if (isFileUploaded) {
+      /**
+       * Make file request object
+       */
+      const parsedFile = {
+        type: file.type,
+        fileId: file.id,
+        payload: file.payload,
+        file: file.file,
+      } as ApiUploadRequest;
+
+      /**
+       * Make response for fully uploaded file
+       */
+      response = await this.options.onUploadMessage(parsedFile);
+    } else {
+      response = {};
+    }
+    client.respondFileTransferMessage(file.id, isFileUploaded, chunkNumber, response);
+
+    /**
+     * Set timeout to remove file, in case of no chunks incoming
+     */
+    file.uploadingWaitingTimeoutId = setTimeout( () => {
+      if (file) {
+        this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
+      }
+    }, this.chunkWaitingTimeout );
   }
 
   /**

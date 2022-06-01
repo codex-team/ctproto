@@ -1,9 +1,10 @@
 import { CTProtoServer } from '../../build/src';
-import { ApiRequest, ApiResponse, ApiUpdate } from '../types';
+import { ApiUploadRequest, ApiRequest, ApiResponse, ApiUpdate, ApiUploadResponse } from '../types';
 import { SumOfNumbersMessagePayload } from '../types/requests/sumOfNumbers';
 import { authTokenMock } from '../mocks/authorizeRequestPayload';
 import { AuthorizeMessagePayload } from '../types/requests/authorize';
 import { AuthorizeResponsePayload } from '../types/responses/authorize';
+import * as fs from 'fs';
 
 /**
  * The example of some API method
@@ -17,11 +18,11 @@ const sumNumbers = (numbers: SumOfNumbersMessagePayload): number => {
 /**
  * Method for creating a server instance
  */
-export function createServer(): CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate> {
+export function createServer(): CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate, ApiUploadRequest, ApiUploadResponse> {
   /**
    * CTProtoServer example
    */
-  const server = new CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate>({
+  const server = new CTProtoServer<AuthorizeMessagePayload, AuthorizeResponsePayload, ApiRequest, ApiResponse, ApiUpdate, ApiUploadRequest, ApiUploadResponse>({
     port: 8080,
     async onAuth(authRequestPayload: AuthorizeMessagePayload): Promise<AuthorizeResponsePayload> {
       if (authRequestPayload.token == authTokenMock) {
@@ -39,7 +40,16 @@ export function createServer(): CTProtoServer<AuthorizeMessagePayload, Authorize
         };
       }
     },
-  });
+    async onUploadMessage(uploadMessage: ApiUploadRequest): Promise<ApiUploadResponse['payload'] | void> {
+      if (uploadMessage.type == 'upload-example-file') {
+        fs.writeFileSync('./files/' + uploadMessage.payload.fileName, uploadMessage.file);
+        return {
+          path: fs.realpathSync('./files/') + '/' + uploadMessage.payload.fileName,
+        };
+      }
+  },
+    }
+  );
 
   return server;
 }
