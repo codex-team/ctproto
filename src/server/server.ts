@@ -13,8 +13,8 @@ import {
 import ClientsList from './clientsList';
 import MessageFactory, { chunkSizeOffset, idLength, numberOfChunkOffset, sizeChunkDataLength } from './../messageFactory';
 import MessageValidator from './messageValidator';
-import { UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
+import FileTransport, { UploadingFile } from "./fileTransport";
 
 /**
  * Available options for the CTProtoServer
@@ -380,7 +380,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Update file data
        */
-      this.updateFileData(file, chunkOffset, fileChunk);
+      FileTransport.updateFileData(file, chunkOffset, fileChunk);
     }
 
     /**
@@ -388,7 +388,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      */
     file.uploadedChunks[chunkNumber] = true;
 
-    if (this.isFileFullyUploaded(file)) {
+    if (FileTransport.isFileFullyUploaded(file)) {
       /**
        * Make file request object
        */
@@ -417,49 +417,6 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
         this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
       }
     }, this.chunkWaitingTimeout );
-  }
-
-  /**
-   * Update file data, insert incoming chunk
-   *
-   * @param file - uploading file
-   * @param chunkSlice - chunk offset
-   * @param fileChunk - data to insert
-   */
-  private updateFileData(file: UploadingFile, chunkSlice: number, fileChunk: Buffer): void {
-    let fileData;
-
-    /**
-     * Push file data
-     */
-    if (file.file.length < chunkSlice + fileChunk.length) {
-      fileData = Buffer.alloc(chunkSlice + fileChunk.length);
-      file.file.copy(fileData);
-      fileChunk.copy(fileData, chunkSlice);
-    } else {
-      fileData = file.file;
-      fileChunk.copy(fileData, chunkSlice);
-    }
-
-    file.file = fileData;
-  }
-
-  /**
-   * Check is file fully uploaded
-   *
-   * @param file - uploading file
-   */
-  private isFileFullyUploaded(file: UploadingFile): boolean {
-    if (!file.chunks) {
-      return false;
-    }
-    for ( let i = 0 ; i < file.chunks ; i++ ) {
-      if (!file.uploadedChunks[i]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**
