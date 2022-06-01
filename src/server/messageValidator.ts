@@ -1,5 +1,5 @@
 import { MessageFormatError, MessageParseError } from './errors';
-import { idLength } from './../messageFactory';
+import { idLength, chunkSizeOffset, sizeChunkDataLength } from './../messageFactory';
 
 /**
  * Provides methods for validating message
@@ -85,9 +85,9 @@ export default class MessageValidator {
     /**
      * Parsing meta data from buffer message
      */
-    const fileIdLength = 10;
-    const sizeOffset = 14;
-    const sizeDataLength = 4;
+    const fileIdLength = idLength;
+    const sizeOffset = chunkSizeOffset;
+    const sizeDataLength = sizeChunkDataLength;
 
     const fileId = message.slice(0, fileIdLength).toString();
     const size = message.readInt32LE(sizeOffset);

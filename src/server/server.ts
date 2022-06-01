@@ -11,7 +11,7 @@ import {
   ResponseMessage
 } from '../../types';
 import ClientsList from './clientsList';
-import MessageFactory from './../messageFactory';
+import MessageFactory, { chunkSizeOffset, idLength, numberOfChunkOffset, sizeChunkDataLength } from './../messageFactory';
 import MessageValidator from './messageValidator';
 import { FileRequest, UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
@@ -304,10 +304,10 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
     /**
      * Parsing meta data from buffer message
      */
-    const fileIdLength = 10;
-    const chunkNumberOffset = 10;
-    const sizeOffset = 14;
-    const sizeDataLength = 4;
+    const fileIdLength = idLength;
+    const chunkNumberOffset = numberOfChunkOffset;
+    const sizeOffset = chunkSizeOffset;
+    const sizeDataLength = sizeChunkDataLength;
 
     const fileId = message.slice(0, fileIdLength).toString();
     const chunkNumber = message.readInt32LE(chunkNumberOffset);

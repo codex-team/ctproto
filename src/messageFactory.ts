@@ -7,6 +7,21 @@ import { nanoid } from 'nanoid';
 export const idLength = 10;
 
 /**
+ * Offset for chunk number data in chunk
+ */
+export const numberOfChunkOffset = 10;
+
+/**
+ * Offset for chunk size data in chunk
+ */
+export const chunkSizeOffset = 14;
+
+/**
+ * Length for chunk size data in chunk
+ */
+export const sizeChunkDataLength = 4;
+
+/**
  * Class for creating of messages
  */
 export default class MessageFactory {
@@ -60,9 +75,9 @@ export default class MessageFactory {
 
     const bufMessage = enc.encode(message);
 
-    const bufInfo = new Uint32Array([chunkNumber, size]);
+    const chunkInfo = new Uint32Array([chunkNumber, size]);
 
-    const bufChunkInfo = new Uint8Array(bufInfo.buffer);
+    const bufChunkInfo = new Uint8Array(chunkInfo.buffer);
 
     const chunk = new Uint8Array(bufFileId.length + bufChunkInfo.length + bufData.length + bufMessage.length);
 
