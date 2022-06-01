@@ -345,7 +345,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        * Create new file object, the first chunk has more info about file ( chunks, payload, type of request )
        */
       if (chunkNumber === 0) {
-        this.uploadingFiles.push( { id: fileId,
+        this.uploadingFiles.push( { 
+          id: fileId,
           uploadedChunks: [],
           file: fileData,
           chunks: payload.chunks,
@@ -353,7 +354,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
           type: payload.type,
         } );
       } else {
-        this.uploadingFiles.push( { id: fileId,
+        this.uploadingFiles.push( { 
+          id: fileId,
           uploadedChunks: [],
           file: fileData,
         } );
