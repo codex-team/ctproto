@@ -1,5 +1,4 @@
-import { NewMessage } from '../../../src';
-import * as Buffer from 'buffer';
+import { NewFileTransferMessage } from '../../../types/message';
 
 /**
  * File request payload
@@ -16,15 +15,10 @@ export interface FileMessagePayload {
 /**
  * File message
  */
-export default interface FileRequestMessage extends NewMessage<FileMessagePayload> {
+export default interface FileRequestMessage extends NewFileTransferMessage<FileMessagePayload> {
 
   /**
    * File request type
    */
   type: 'upload-example-file';
-
-  /**
-   * File data
-   */
-  file: Buffer;
 }

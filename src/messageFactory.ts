@@ -1,4 +1,4 @@
-import { NewMessage, ResponseMessage } from '../types';
+import {FileTransferResponseMessage, NewMessage, ResponseMessage} from '../types';
 import { nanoid } from 'nanoid';
 
 /**
@@ -90,6 +90,25 @@ export default class MessageFactory {
       messageId,
       payload,
     } as ResponseMessage<MessagePayload>);
+  }
+
+  /**
+   * Creates the RespondFileTransportMessage
+   *
+   * @template MessagePayload - the type describing structure of the message payload
+   *
+   * @param fileId - id of a file to respond
+   * @param isUploaded - is file fully uploaded on the server side
+   * @param chunkNumber - number of incoming chunk
+   * @param payload - data to send
+   */
+  public static respondFileTransferMessage<MessagePayload>(fileId: string, isUploaded: boolean, chunkNumber: number, payload: MessagePayload): string {
+    return JSON.stringify({
+      fileId,
+      isUploaded,
+      chunkNumber,
+      payload,
+    } as FileTransferResponseMessage<MessagePayload>);
   }
 
   /**

@@ -27,4 +27,6 @@ export type ApiUploadRequest =
 export type ApiResponse =
   | AuthorizeResponse
   | SumOfNumbersResponse
+
+export type ApiUploadResponse =
   | UploadExampleFileResponse

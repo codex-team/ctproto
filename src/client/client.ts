@@ -1,5 +1,5 @@
 import MessageFactory from '../messageFactory';
-import { NewMessage, ResponseMessage } from '../../types';
+import {FileTransferResponseMessage, NewFileTransferMessage, NewMessage, ResponseMessage} from '../../types';
 import { FileRequest } from '../../types/file';
 
 /**
@@ -152,7 +152,7 @@ interface EnqueuedChunkMessage {
  * @template ApiResponse - the type described all available API response messages
  * @template ApiUpdate - the type described all available message initialized by the API
  */
-export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>, ApiUploadRequest extends FileRequest<unknown>> {
+export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>, ApiFileTransferRequest extends NewFileTransferMessage<unknown>, ApiFileTransferResponse extends FileTransferResponseMessage<unknown>> {
   /**
    * Instance of WebSocket
    */
@@ -183,7 +183,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
   /**
    * Files which are uploading at the moment
    */
-  private uploadingFiles: Array<FileToUpload<ApiResponse['payload']>> = new Array<FileToUpload<ApiResponse['payload']>>();
+  private uploadingFiles: Array<FileToUpload<ApiFileTransferResponse['payload']>> = new Array<FileToUpload<ApiFileTransferResponse['payload']>>();
 
   /**
    * Limit for the chunk size in bytes
@@ -230,15 +230,15 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param payload - available request payload
    */
   public async sendFile(
-    type: ApiUploadRequest['type'],
+    type: ApiFileTransferRequest['type'],
     file: File,
-    payload: ApiUploadRequest['payload']
+    payload: ApiFileTransferRequest['payload']
 
-  ): Promise<ApiResponse['payload']> {
+  ): Promise<ApiFileTransferResponse['payload']> {
     const bufFile = await file.arrayBuffer();
 
     return new Promise( resolve => {
-      const callback = (response: ApiResponse['payload']): void => {
+      const callback = (response: ApiFileTransferResponse['payload']): void => {
         resolve(response);
       };
 
@@ -333,7 +333,7 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    * @param chunkNumber - number of sending chunk
    * @param message - additional info for chunk
    */
-  private sendChunk(file: FileToUpload<ApiResponse['payload']>, chunkNumber: number, message: string): void {
+  private sendChunk(file: FileToUpload<ApiFileTransferResponse['payload']>, chunkNumber: number, message: string): void {
     /**
      * Getting chunk by slicing file by the chunk number and buffer limit
      */
@@ -382,8 +382,10 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
    *
    * @param fileId - uploading file id
    * @param chunkNumber - file chunk number, which handled on server
+   * @param isUploaded - is file fully uploaded on the server side
+   * @param payload - message payload
    */
-  private onChunkResponseMessage( fileId: string, chunkNumber: number ): void {
+  private onChunkResponseMessage( fileId: string, chunkNumber: number, isUploaded: boolean, payload: unknown ): void {
     const uploadingFile = this.getUploadingFileById( fileId );
 
     if (!uploadingFile) {
@@ -393,7 +395,6 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     /**
      * Make log about loading progress
      */
-
     const percentMultiplier = 100;
     const percent = Math.floor(chunkNumber / Math.ceil(uploadingFile.fileData.length / this.chunkSize) * percentMultiplier);
 
@@ -408,7 +409,12 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
       clearTimeout(uploadingFile.responseWaitingTimeoutId);
     }
 
-    this.sendChunk(uploadingFile, chunkNumber + 1, MessageFactory.createChunkMessage());
+    if (isUploaded) {
+      uploadingFile.cb(payload);
+      this.uploadingFiles.splice(this.uploadingFiles.indexOf(uploadingFile), 1);
+    } else {
+      this.sendChunk(uploadingFile, chunkNumber + 1, MessageFactory.createChunkMessage());
+    }
   }
 
   /**
@@ -513,25 +519,14 @@ export default class CTProtoClient<AuthRequestPayload, AuthResponsePayload, ApiR
     try {
       const message = JSON.parse(event.data.toString());
       const messageId = message.messageId;
-      const payload = message.payload;
 
-      if ('fileId' in payload) {
-        this.onChunkResponseMessage( payload.fileId, payload.chunkNumber );
+      if ('fileId' in message) {
+        this.onChunkResponseMessage( message.fileId, message.chunkNumber, message.isUploaded, message.payload );
       } else if ('type' in message) {
         this.options.onMessage(message);
       }
 
       const request: Request<ApiRequest['payload']> | undefined = this.requests.find(req => req.messageId === messageId);
-
-      const file = this.getUploadingFileById(messageId);
-
-      if (file) {
-        file.cb(message.payload);
-        if (file.responseWaitingTimeoutId) {
-          clearTimeout( file.responseWaitingTimeoutId );
-        }
-        this.uploadingFiles.splice(this.uploadingFiles.indexOf(file), 1);
-      }
 
       /**
        * If we found requests, and we have cb we do cb function

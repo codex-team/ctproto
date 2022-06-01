@@ -3,12 +3,19 @@ import ws from 'ws';
 import { CriticalError } from './errors';
 import { CloseEventCode } from './closeEvent';
 import Client from './client';
-import { NewMessage, ResponseMessage } from '../../types';
+import {
+  FileTransferMessage,
+  FileTransferResponseMessage,
+  NewFileTransferMessage,
+  NewMessage,
+  ResponseMessage
+} from '../../types';
 import ClientsList from './clientsList';
 import MessageFactory from './../messageFactory';
 import MessageValidator from './messageValidator';
 import { FileRequest, UploadingFile } from '../../types/file';
 import { Buffer } from 'buffer';
+import * as fs from "fs";
 
 /**
  * Available options for the CTProtoServer
@@ -18,7 +25,7 @@ import { Buffer } from 'buffer';
  * @template ApiRequest - the type described all available API request messages
  * @template ApiResponse - the type described all available API response messages
  */
-export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>, ApiUploadRequest extends FileRequest<unknown>> extends ws.ServerOptions{
+export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse extends ResponseMessage<unknown>, ApiUploadRequest extends FileTransferMessage<unknown>, ApiUploadResponse extends FileTransferResponseMessage<unknown>> extends ws.ServerOptions{
   /**
    * Allows overriding server host
    *
@@ -64,7 +71,7 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
    * @param uploadMessage - file message data
    * @returns optionally can return any data to respond to client
    */
-  onUploadMessage: (uploadMessage: ApiUploadRequest) => Promise<void | ApiResponse['payload']>;
+  onUploadMessage: (uploadMessage: ApiUploadRequest) => Promise<void | ApiUploadResponse['payload']>;
 
   /**
    * Allows to disable validation/authorization and other warning messages
@@ -89,7 +96,7 @@ export interface CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, 
  * @template ApiResponse - the type describing all available API response messages
  * @template ApiUpdate - all available outgoing messages
  */
-export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>, ApiUploadRequest extends FileRequest<unknown>> {
+export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewMessage<unknown>, ApiResponse extends ResponseMessage<unknown>, ApiUpdate extends NewMessage<unknown>, ApiUploadRequest extends NewFileTransferMessage<unknown>, ApiUploadResponse extends FileTransferResponseMessage<unknown>> {
   /**
    * Manager of currently connected clients
    * Allows to find, send and other manipulations.
@@ -115,7 +122,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
   /**
    * Configuration options passed on Transport initialization
    */
-  private readonly options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest>;
+  private readonly options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest, ApiUploadResponse>;
 
   /**
    * Constructor
@@ -123,7 +130,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param options - Transport options
    * @param WebSocketsServer - allows to override the 'ws' dependency. Used for mocking it in tests.
    */
-  constructor(options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest>, WebSocketsServer?: ws.Server) {
+  constructor(options: CTProtoServerOptions<AuthRequestPayload, AuthData, ApiRequest, ApiResponse, ApiUploadRequest, ApiUploadResponse>, WebSocketsServer?: ws.Server) {
     /**
      * Do not save clients in ws.clients property
      * because we will use own Map (this.ClientsList)
@@ -263,7 +270,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param client - connected client
    * @param message - accepted message
    */
-  private async handleAuthorizedMessage(client: Client<AuthData, ApiResponse, ApiUpdate>, message: ApiRequest): Promise<void> {
+  private async handleAuthorizedMessage(client: Client<AuthData, ApiResponse, ApiUpdate, ApiUploadResponse>, message: ApiRequest): Promise<void> {
     if (message.type == 'authorize') {
       return;
     }
@@ -293,7 +300,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
    * @param client - connected client
    * @param message - accepted message
    */
-  private async handleBufferMessage(client: Client<AuthData, ApiResponse, ApiUpdate>, message: Buffer): Promise<void> {
+  private async handleBufferMessage(client: Client<AuthData, ApiResponse, ApiUpdate, ApiUploadResponse>, message: Buffer): Promise<void> {
     /**
      * Parsing meta data from buffer message
      */
@@ -388,6 +395,7 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       const parsedFile = {
         type: file.type,
+        fileId: file.id,
         payload: file.payload,
         file: file.file,
       } as ApiUploadRequest;
@@ -397,18 +405,9 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
        */
       const response = await this.options.onUploadMessage(parsedFile);
 
-      client.respond(fileId, response);
+      client.respondFileTransferMessage(file.id, true, chunkNumber, response);
     } else {
-      /**
-       * Make response for incoming chunk
-       */
-      const response = {
-        chunkNumber: chunkNumber,
-        type: file.type,
-        fileId: file.id,
-      };
-
-      client.respond(payload.id, response);
+      client.respondFileTransferMessage(file.id, false, chunkNumber, {});
     }
 
     /**

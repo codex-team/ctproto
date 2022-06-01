@@ -1,4 +1,4 @@
-import { ResponseMessage } from '../../../types';
+import {FileTransferResponseMessage, ResponseMessage} from '../../../types';
 
 /**
  * File response payload
@@ -13,4 +13,4 @@ export interface UploadExampleFileResponsePayload {
 /**
  * Describes the response file uploading
  */
-export default interface UploadExampleFileResponse extends ResponseMessage<UploadExampleFileResponsePayload> {}
+export default interface UploadExampleFileResponse extends FileTransferResponseMessage<UploadExampleFileResponsePayload> {}
