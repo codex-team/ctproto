@@ -14,7 +14,7 @@ import ClientsList from './clientsList';
 import MessageFactory, { chunkSizeOffset, idLength, numberOfChunkOffset, sizeChunkDataLength } from './../messageFactory';
 import MessageValidator from './messageValidator';
 import { Buffer } from 'buffer';
-import FileTransport, { UploadingFile } from "./fileTransport";
+import FileTransport, { UploadingFile } from './fileTransport';
 
 /**
  * Available options for the CTProtoServer

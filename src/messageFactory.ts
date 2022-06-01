@@ -1,4 +1,4 @@
-import {FileTransferResponseMessage, NewMessage, ResponseMessage} from '../types';
+import { FileTransferResponseMessage, NewMessage, ResponseMessage } from '../types';
 import { nanoid } from 'nanoid';
 
 /**

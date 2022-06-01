@@ -1,4 +1,4 @@
-import {Buffer} from "buffer";
+import { Buffer } from 'buffer';
 
 /**
  * Data for uploading files, it uses to identify what file chunk is uploading and store info about file
@@ -78,7 +78,6 @@ export default class FileTransport {
        */
       file.file = fileData;
     } else {
-
       /**
        * Pass incoming chunk data saved file data, in case, when chunk offset is less than saved file data
        */
