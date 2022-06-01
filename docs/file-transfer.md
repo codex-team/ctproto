@@ -35,14 +35,13 @@ But it might look like this, remaining parameters are not required:
 }
 ```
 
-Example of chunk upload response message:
+Example of chunk upload response message, <code>payload</code> uses for response for fully uploaded file:
 ```json
 {
-  "messageId": "KiO4dInCZz",
+  "fileId": "3eo11IpiZC",
+  "chunkNumber": 4,
+  "isUploaded": false,
   "payload": {
-      "chunkNumber": 4,
-      "type": "upload-example-file",
-      "fileId": "3eo11IpiZC"
   }
 }
 ```

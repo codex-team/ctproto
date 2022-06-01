@@ -121,11 +121,11 @@ const transport = new CTProtoServer({
 
 Where 
 
-| option | type                                                             | description                                |
-| ------ |------------------------------------------------------------------|--------------------------------------------|
-| `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<_AuthData>_ | Method for authorization. See details below |
-| `onMessage` | _(message: NewMessage) => Promise<_void &#124; object_>_            | Message handler. See details below              |
-| `onUploadMessage` | _(fileMessage: NewMessage) => Promise<void &#124; object>_          | Upload message handler. See details below  |
+| option | type                                                                 | description                                |
+| ------ |----------------------------------------------------------------------|--------------------------------------------|
+| `onAuth` | _(authRequestPayload: AuthRequestPayload) => Promise<_AuthData>_     | Method for authorization. See details below |
+| `onMessage` | _(message: NewFileTransferMessage) => Promise<_void &#124; object_>_ | Message handler. See details below              |
+| `onUploadMessage` | _(fileMessage: NewMessage) => Promise<void &#124; object>_           | Upload message handler. See details below  |
 
 and you can set any [ws.Server](https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback) options.
 
@@ -258,12 +258,12 @@ client
 Where
 
 
-| parameter         | type                        | description           |
-|-------------------|-----------------------------|-----------------------|
-| `type`            | ApiUploadRequest['type']    | Type of file request. |
-| `file`            | ArrayBuffer                 | File data.            |
-| `payload`         | ApiUploadRequest['payload'] | Request payload.      |
- | `responsePayload` | ApiResponse['payload']      | Response payload.     |
+| parameter         | type                               | description           |
+|-------------------|------------------------------------|-----------------------|
+| `type`            | ApiUploadRequest['type']           | Type of file request. |
+| `file`            | File                               | File data.            |
+| `payload`         | ApiUploadRequest['payload']        | Request payload.      |
+ | `responsePayload` | ApiFileTransferResponse['payload'] | Response payload.     |
 
 Example
 
