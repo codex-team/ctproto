@@ -55,18 +55,35 @@ export default class FileTransport {
     let fileData;
 
     /**
-     * Push file data
+     * Check if incoming chunk offset is bigger then saved file data
      */
     if (file.file.length < chunkSlice + fileChunk.length) {
+      /**
+       * Creates new buffer with size of new chunk
+       */
       fileData = Buffer.alloc(chunkSlice + fileChunk.length);
-      file.file.copy(fileData);
-      fileChunk.copy(fileData, chunkSlice);
-    } else {
-      fileData = file.file;
-      fileChunk.copy(fileData, chunkSlice);
-    }
 
-    file.file = fileData;
+      /**
+       * Pass previous file data to new buffer
+       */
+      file.file.copy(fileData);
+
+      /**
+       * Pass incoming chunk data to new buffer
+       */
+      fileChunk.copy(fileData, chunkSlice);
+
+      /**
+       * Change file data
+       */
+      file.file = fileData;
+    } else {
+
+      /**
+       * Pass incoming chunk data saved file data, in case, when chunk offset is less than saved file data
+       */
+      fileChunk.copy(file.file, chunkSlice);
+    }
   }
 
   /**

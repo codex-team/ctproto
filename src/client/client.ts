@@ -1,6 +1,5 @@
 import MessageFactory from '../messageFactory';
-import {FileTransferResponseMessage, NewFileTransferMessage, NewMessage, ResponseMessage} from '../../types';
-import { FileRequest } from '../../types/file';
+import { FileTransferResponseMessage, NewFileTransferMessage, NewMessage, ResponseMessage } from '../../types';
 
 /**
  * Available options for the CTProtoClient

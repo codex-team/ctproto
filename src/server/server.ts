@@ -358,8 +358,8 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
           uploadedChunks: [],
           file: fileData,
         };
-        this.uploadingFiles.push(file);
       }
+      this.uploadingFiles.push(file);
     } else {
       /**
        * Clear timeout, if chunk comes
@@ -388,7 +388,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
      */
     file.uploadedChunks[chunkNumber] = true;
 
-    if (FileTransport.isFileFullyUploaded(file)) {
+    const isFileUploaded = FileTransport.isFileFullyUploaded(file);
+
+    let response;
+
+    if (isFileUploaded) {
       /**
        * Make file request object
        */
@@ -402,12 +406,11 @@ export class CTProtoServer<AuthRequestPayload, AuthData, ApiRequest extends NewM
       /**
        * Make response for fully uploaded file
        */
-      const response = await this.options.onUploadMessage(parsedFile);
-
-      client.respondFileTransferMessage(file.id, true, chunkNumber, response);
+      response = await this.options.onUploadMessage(parsedFile);
     } else {
-      client.respondFileTransferMessage(file.id, false, chunkNumber, {});
+      response = {};
     }
+    client.respondFileTransferMessage(file.id, isFileUploaded, chunkNumber, response);
 
     /**
      * Set timeout to remove file, in case of no chunks incoming
